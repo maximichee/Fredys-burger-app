@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --brand: #fb8500;
+    --brand-strong: #ff6b00;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    @apply bg-dark text-white font-sans antialiased;
+  }
+
+  ::selection {
+    @apply bg-brand/30 text-white;
+  }
+
+  /* Scrollbar personalizado */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-dark-100; }
+  ::-webkit-scrollbar-thumb { @apply bg-dark-300 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-brand/60; }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .text-balance { text-wrap: balance; }
+
+  .price-format::before { content: '$'; }
+}
