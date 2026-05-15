@@ -3,7 +3,7 @@ import { type HTMLMotionProps, motion } from 'framer-motion';
 import { forwardRef } from 'react';
 import { cn } from '@/lib/cn';
 
-interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'> {
+interface ButtonProps extends HTMLMotionProps<'button'> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
