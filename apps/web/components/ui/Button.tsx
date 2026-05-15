@@ -1,15 +1,13 @@
 'use client';
-import { motion } from 'framer-motion';
-import { ButtonHTMLAttributes, forwardRef } from 'react';
+import { type HTMLMotionProps, motion } from 'framer-motion';
+import { forwardRef } from 'react';
 import { cn } from '@/lib/cn';
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
 }
-
-const MotionButton = motion.create('button');
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant = 'primary', size = 'md', loading, className, children, disabled, type = 'button', ...props }, ref) => {
@@ -29,7 +27,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     return (
-      <MotionButton
+      <motion.button
         ref={ref}
         type={type}
         whileTap={{ scale: disabled || loading ? 1 : 0.96 }}
@@ -44,7 +42,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           </svg>
         )}
         {children}
-      </MotionButton>
+      </motion.button>
     );
   },
 );
