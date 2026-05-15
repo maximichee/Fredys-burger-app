@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Poppins } from 'next/font/google';
+import { CartHydration } from '@/components/CartHydration';
 import './globals.css';
 
 const poppins = Poppins({
@@ -55,7 +56,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <CartHydration />
+        {children}
+      </body>
     </html>
   );
 }

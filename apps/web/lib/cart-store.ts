@@ -78,6 +78,12 @@ export const useCart = create<CartStore>()(
       subtotal: () => get().items.reduce((s, i) => s + i.price * i.quantity, 0),
       totalItems: () => get().items.reduce((s, i) => s + i.quantity, 0),
     }),
-    { name: 'fredys-cart' },
+    {
+      name: 'fredys-cart',
+      skipHydration: true,
+      storage: typeof window !== 'undefined'
+        ? { getItem: (k) => JSON.parse(localStorage.getItem(k) ?? 'null'), setItem: (k, v) => localStorage.setItem(k, JSON.stringify(v)), removeItem: (k) => localStorage.removeItem(k) }
+        : { getItem: () => null, setItem: () => {}, removeItem: () => {} },
+    },
   ),
 );
