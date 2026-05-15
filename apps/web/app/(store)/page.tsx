@@ -14,7 +14,13 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 async function MenuContent({ query }: { query?: string }) {
-  const [categories, products] = await Promise.all([getCategories(), getProducts()]);
+  let categories: Awaited<ReturnType<typeof getCategories>> = [];
+  let products: Awaited<ReturnType<typeof getProducts>> = [];
+  try {
+    [categories, products] = await Promise.all([getCategories(), getProducts()]);
+  } catch {
+    // API no disponible — se muestra menú vacío hasta que el backend esté desplegado
+  }
 
   const filtered = query
     ? products.filter(
