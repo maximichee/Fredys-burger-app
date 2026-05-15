@@ -1,6 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+
+export const dynamic = 'force-dynamic';
 import { motion } from 'framer-motion';
 import { useCart } from '@/lib/cart-store';
 import { createOrder } from '@/lib/api';
@@ -34,6 +36,10 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [done,    setDone]    = useState(false);
   const [orderCode, setOrderCode] = useState('');
+
+  useEffect(() => {
+    if (items.length === 0 && !done) router.push('/');
+  }, [items.length, done, router]);
 
   const deliveryCost = DELIVERY_COSTS[zona] ?? 0;
   const total = subtotal() + deliveryCost;
@@ -100,10 +106,7 @@ export default function CheckoutPage() {
     );
   }
 
-  if (items.length === 0) {
-    router.push('/');
-    return null;
-  }
+  if (items.length === 0 && !done) return null;
 
   return (
     <>
