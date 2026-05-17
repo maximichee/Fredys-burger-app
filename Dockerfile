@@ -14,6 +14,9 @@ COPY apps/api/ apps/api/
 # Install all deps (devDeps needed for nest build)
 RUN pnpm install --frozen-lockfile
 
+# Generate Prisma client
+RUN pnpm --filter @fredys/api exec prisma generate
+
 # Compile TypeScript
 RUN pnpm --filter @fredys/api build
 
