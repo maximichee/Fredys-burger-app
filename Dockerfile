@@ -17,6 +17,9 @@ RUN pnpm install --frozen-lockfile
 # Compile TypeScript
 RUN pnpm --filter @fredys/api build
 
+# Verify dist was created (fails build if missing)
+RUN ls apps/api/dist/main.js
+
 EXPOSE 3001
 
 CMD ["node", "apps/api/dist/main"]
