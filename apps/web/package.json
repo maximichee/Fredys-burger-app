@@ -6,7 +6,7 @@
     "dev": "next dev --port 3000",
     "fotos": "node scripts/optimizar-fotos.mjs",
     "prebuild": "node scripts/optimizar-fotos.mjs",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
