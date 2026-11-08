@@ -43,7 +43,7 @@ export default function AdminPedidosPage() {
   // Polling de respaldo cada 60s
   useEffect(() => { load(); const id = setInterval(load, 60000); return () => clearInterval(id); }, [load]);
 
-  // WebSocket: auto-refresh al llegar nuevo pedido o actualización
+  // Pedidos en vivo (revisa cada 8 s): suena al llegar uno nuevo
   useOrdersSocket({
     onNewOrder: () => { load(); playSound(); },
     onOrderUpdated: (updated) => {

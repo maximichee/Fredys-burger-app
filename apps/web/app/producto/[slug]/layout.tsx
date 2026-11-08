@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { cache } from 'react';
-import { getProduct } from '@/lib/api';
+import { producto as getProduct } from '@/lib/server/menu';
 import { SITE_URL } from '@/lib/sitio';
 import { formatPrice, imgSrc } from '@/lib/utils';
 

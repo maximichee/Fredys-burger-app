@@ -15,14 +15,8 @@ const config: NextConfig = {
     ],
     unoptimized: true,
   },
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/api/:path*`,
-      },
-    ];
-  },
+  // Prisma corre en el servidor de Vercel (rutas /api y páginas del servidor)
+  serverExternalPackages: ['@prisma/client', 'bcryptjs'],
 };
 
 export default config;

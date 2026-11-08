@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { getCategories, getProducts } from '@/lib/api';
+import { categorias as getCategories, productos as getProducts } from '@/lib/server/menu';
 import { CategoryPills } from '@/components/menu/CategoryPills';
 import { ProductCard } from '@/components/menu/ProductCard';
 import { RepetirPedido } from '@/components/fredys/RepetirPedido';

@@ -1,0 +1,83 @@
+import { OrderStatus } from '@prisma/client';
+import { db } from './db';
+
+/* Pedidos. Mejora respecto de la API anterior: los precios se toman de la base, no del navegador,
+   así nadie puede mandar un pedido con precios inventados. */
+
+export class ErrorPedido extends Error {}
+
+const texto = (v: unknown, max: number, campo: string, opcional = false) => {
+  if (v === undefined || v === null || v === '') {
+    if (opcional) return undefined;
+    throw new ErrorPedido(`Falta ${campo}`);
+  }
+  const s = String(v).trim();
+  if (!s && !opcional) throw new ErrorPedido(`Falta ${campo}`);
+  return s.slice(0, max) || undefined;
+};
+
+type ItemEntrada = { productId?: string; priceLabel?: string; quantity?: number; comment?: string };
+type PedidoEntrada = {
+  deliveryMethod?: string; paymentMethod?: string; customerName?: string; customerPhone?: string;
+  address?: string; zone?: string; deliveryCost?: number; notes?: string; items?: ItemEntrada[];
+};
+
+export async function crearPedido(d: PedidoEntrada) {
+  const items = Array.isArray(d.items) ? d.items : [];
+  if (!items.length) throw new ErrorPedido('El pedido está vacío');
+  if (items.length > 60) throw new ErrorPedido('Demasiados productos');
+
+  const entrega = texto(d.deliveryMethod, 20, 'la forma de entrega')!;
+  if (!['DELIVERY', 'PICKUP'].includes(entrega)) throw new ErrorPedido('Forma de entrega inválida');
+  const envio = entrega === 'DELIVERY' ? Math.max(0, Math.round(Number(d.deliveryCost) || 0)) : 0;
+  if (envio > 50000) throw new ErrorPedido('Costo de envío inválido');
+
+  // Precios de la base
+  const ids = [...new Set(items.map((i) => String(i.productId)))];
+  const prods = await db.product.findMany({ where: { id: { in: ids } }, include: { prices: true } });
+  const lineas = items.map((i) => {
+    const p = prods.find((x) => x.id === i.productId);
+    const precio = p?.prices.find((x) => x.label === i.priceLabel);
+    if (!p || !p.available || !precio) throw new ErrorPedido('Un producto del pedido ya no está disponible. Revisá el carrito.');
+    const cantidad = Math.round(Number(i.quantity));
+    if (!(cantidad >= 1 && cantidad <= 50)) throw new ErrorPedido('Cantidad inválida');
+    return {
+      productId: p.id, productName: p.name, priceLabel: precio.label, unitPrice: precio.price, quantity: cantidad,
+      comment: texto(i.comment, 300, 'comentario', true), subtotal: precio.price * cantidad,
+    };
+  });
+  const subtotal = lineas.reduce((s, l) => s + l.subtotal, 0);
+
+  return db.order.create({
+    data: {
+      code: `PED${Date.now()}`,
+      status: OrderStatus.PENDING,
+      deliveryMethod: entrega,
+      paymentMethod: texto(d.paymentMethod, 20, 'la forma de pago')!,
+      customerName: texto(d.customerName, 80, 'el nombre')!,
+      customerPhone: texto(d.customerPhone, 30, 'el teléfono')!,
+      address: entrega === 'DELIVERY' ? texto(d.address, 200, 'la dirección') : undefined,
+      zone: texto(d.zone, 20, 'zona', true),
+      notes: texto(d.notes, 500, 'notas', true),
+      deliveryCost: envio,
+      subtotal,
+      total: subtotal + envio,
+      items: { create: lineas },
+    },
+    include: { items: true },
+  });
+}
+
+export const pedidos = (estado?: string) =>
+  db.order.findMany({
+    where: estado && estado in OrderStatus ? { status: estado as OrderStatus } : {},
+    include: { items: true },
+    orderBy: { createdAt: 'desc' },
+  });
+
+export const pedido = (id: string) => db.order.findUniqueOrThrow({ where: { id }, include: { items: true } });
+
+export function cambiarEstado(id: string, estado: string) {
+  if (!(estado in OrderStatus)) throw new ErrorPedido('Estado inválido');
+  return db.order.update({ where: { id }, data: { status: estado as OrderStatus }, include: { items: true } });
+}

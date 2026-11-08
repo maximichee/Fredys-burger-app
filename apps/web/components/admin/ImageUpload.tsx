@@ -17,7 +17,7 @@ export function ImageUpload({ value, onChange, token }: ImageUploadProps) {
     const form = new FormData();
     form.append('file', file);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/upload/image`, {
+      const res = await fetch('/api/upload/image', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: form,

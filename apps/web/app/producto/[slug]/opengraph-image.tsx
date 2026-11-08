@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { getProduct } from '@/lib/api';
+import { producto as getProduct } from '@/lib/server/menu';
 import { formatPrice, imgSrc } from '@/lib/utils';
 import { SITE_URL } from '@/lib/sitio';
 
@@ -30,7 +30,7 @@ async function foto(ruta?: string) {
 export default async function Imagen({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   let p: Awaited<ReturnType<typeof getProduct>> | null = null;
-  try { p = await getProduct(slug); } catch { /* sin API: tarjeta de la marca */ }
+  try { p = await getProduct(slug); } catch { /* sin base: tarjeta de la marca */ }
 
   const [anton, poppins, poppinsSemi, logo, img] = await Promise.all([
     leer('assets', 'fonts', 'Anton-Regular.ttf'),

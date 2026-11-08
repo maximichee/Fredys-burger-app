@@ -1,6 +1,8 @@
 import type { Category, Product, Order, CreateOrderDto } from '@fredys/types';
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+// El menú y los pedidos viven en la misma web (rutas /api en Vercel). Solo se usa desde el navegador:
+// las páginas del servidor leen la base directo (lib/server).
+const BASE = '';
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}/api${path}`, {

@@ -122,6 +122,35 @@ Google Analytics 4 (gratis; Vercel Analytics no cuenta acciones en el plan grati
 
 Las visitas desde la app instalada se ven por la dirección `/?origen=app`.
 
+## Menú y pedidos dentro de Vercel (sin servidor aparte)
+La API de NestJS en Railway se cayó (y Railway ya no es gratis). Ahora **todo corre en la misma web en Vercel**: el menú, los pedidos, el login del panel y la subida de fotos. `apps/api` queda como referencia y ya no se publica.
+
+| Pieza | Archivo |
+|---|---|
+| Conexión a la base (Supabase, con Prisma) | `apps/web/lib/server/db.ts` |
+| Menú (leer y editar desde el panel) | `apps/web/lib/server/menu.ts` |
+| Pedidos (precios tomados de la base, no del navegador) | `apps/web/lib/server/pedidos.ts` |
+| Login del panel (token JWT) | `apps/web/lib/server/auth.ts` |
+| Rutas `/api/...` (mismas direcciones que la API vieja) | `apps/web/app/api/` |
+| Tablas, migraciones y carga del menú | `apps/web/prisma/` (`seed.mts`) |
+| Pedidos en vivo en el panel (revisa cada 8 s; antes era WebSocket) | `apps/web/lib/use-orders-socket.ts` |
+
+- El inicio, las fichas, el sitemap y la imagen al compartir leen la base directo (más rápido, sin ir y volver por `/api`).
+- Al editar el menú desde el panel, el inicio y las fichas se actualizan al momento.
+- **Seguridad:** la contraseña del admin ya no está escrita en el código (antes `fredys2026admin`, visible en el repositorio público). Sale de `ADMIN_PASSWORD` al cargar la base.
+
+**Variables en Vercel** (Settings → Environment Variables):
+
+| Variable | Qué es |
+|---|---|
+| `DATABASE_URL` | Supabase → Connect → "Transaction pooler" (puerto 6543), agregando `?pgbouncer=true&connection_limit=1` al final |
+| `DIRECT_URL` | Supabase → Connect → "Session pooler" (puerto 5432) |
+| `JWT_SECRET` | Texto al azar de 32+ caracteres (firma las sesiones del panel) |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Las mismas de `apps/api/.env` (subida de fotos desde el panel) |
+| ~~`NEXT_PUBLIC_API_URL`~~ | Ya no se usa: borrarla |
+
+**Crear las tablas y cargar el menú** (una vez, desde la compu): poner `DATABASE_URL`, `DIRECT_URL`, `ADMIN_EMAIL` y `ADMIN_PASSWORD` en `apps/web/.env.production.local` (no se sube a git) y correr `pnpm --filter @fredys/web exec prisma migrate deploy` y después `node prisma/seed.mts` desde `apps/web`.
+
 ## Qué se edita fácil
 - **Titular y textos de la portada:** `components/fredys/Hero.tsx`.
 - **Pasos, envío, "Por qué", horario:** `components/fredys/Secciones.tsx`.
@@ -169,7 +198,7 @@ Las visitas desde la app instalada se ven por la dirección `/?origen=app`.
 1. **[RESEÑA REAL DE CLIENTE]** y **[NOMBRE Y DE DÓNDE ES LA RESEÑA]** en "Por qué Fredy's" (con permiso).
 2. **Fotos que no existen** en el seed/base: `img/hallfredys.jpg`, `img/fredys-muzz.jpg`, `img/crispy-muzz.jpg`, `img/big-muzz.jpg` y otras. Mientras tanto se muestra la foto de promo (a pedido del dueño). Al subirlas a `public/img/`, el build las optimiza solo.
 3. **Logo original** (SVG, AI o PNG grande) en `materiales/logo/`: hoy se usa el PNG de 150 px en la web y una captura de 884 px para los íconos de la app.
-4. **La API publicada no responde** (Railway devuelve "Application not found"): sin API el menú de producción sale vacío con el aviso "El menú no cargó".
+4. ~~La API publicada no responde~~ Resuelto: el menú y los pedidos corren en Vercel (ver "Menú y pedidos dentro de Vercel"). Falta la base en Supabase y las variables en Vercel.
 5. ~~Fotos de productos pesadas~~ Resuelto: `scripts/optimizar-fotos.mjs` (corre solo antes de cada build, o `pnpm --filter @fredys/web fotos`) las pasa a WebP en `public/img/opt/` en dos tamaños (900 px y 240 px) y escribe `lib/fotos.generated.ts`. `imgSrc(ruta, 'sm' | 'lg')` sirve la liviana sin cambiar las rutas de la base; si no existe, la de promo. 40,9 MB → 2,7 MB.
 6. `components/ui/Button.tsx` tiene un error de tipos previo al rediseño (no frena el build porque `ignoreBuildErrors` está activo).
 7. `components/PageTransition.tsx` y `HeroSlider.tsx` quedaron sin uso; se pueden borrar.

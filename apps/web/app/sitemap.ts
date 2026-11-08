@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { getProducts } from '@/lib/api';
+import { productos as getProducts } from '@/lib/server/menu';
 import { SITE_URL } from '@/lib/sitio';
 
 export const revalidate = 3600;
