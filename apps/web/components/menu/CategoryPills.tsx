@@ -17,11 +17,13 @@ export function CategoryPills({ categories }: CategoryPillsProps) {
   // Highlight activo al scrollear
   useEffect(() => {
     const handler = () => {
-      const offset = window.scrollY + 140;
+      // Posición en pantalla (no offsetTop: el menú es "relative" y lo desfasaba).
+      // Línea de corte: debajo del navbar + la barra de cápsulas.
+      const corte = (containerRef.current?.getBoundingClientRect().bottom ?? 140) + 24;
       let current = categories[0]?.slug;
       for (const cat of categories) {
         const el = document.getElementById(cat.slug);
-        if (el && el.offsetTop <= offset) current = cat.slug;
+        if (el && el.getBoundingClientRect().top <= corte) current = cat.slug;
       }
       if (current && current !== active) {
         setActive(current);
@@ -29,6 +31,7 @@ export function CategoryPills({ categories }: CategoryPillsProps) {
       }
     };
     window.addEventListener('scroll', handler, { passive: true });
+    handler();
     return () => window.removeEventListener('scroll', handler);
   }, [categories, active]);
 
@@ -70,25 +73,25 @@ export function CategoryPills({ categories }: CategoryPillsProps) {
   }
 
   return (
-    <div className="sticky top-[62px] z-40 bg-dark-100/95 backdrop-blur-md border-b border-white/5">
+    <div className="sticky top-16 z-40 mt-6 border-y border-[var(--line)] bg-dark/90 backdrop-blur-md">
       <div
         ref={containerRef}
         onMouseDown={onMouseDown}
-        className="flex gap-2 overflow-x-auto no-scrollbar px-4 py-3 cursor-grab"
+        className="no-scrollbar mx-auto flex max-w-6xl cursor-grab gap-2 overflow-x-auto px-[var(--gutter)] py-3"
       >
         {categories.map((cat) => (
           <button
             key={cat.slug}
             data-slug={cat.slug}
             onClick={() => handleClick(cat.slug)}
-            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+            className={`flex min-h-[44px] flex-shrink-0 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-all ${
               active === cat.slug
-                ? 'bg-brand text-black'
-                : 'bg-dark-300 text-white/60 hover:text-white hover:border-brand/30 border border-white/10'
+                ? 'bg-brand text-tinta shadow-[0_3px_0_var(--choco)]'
+                : 'border border-[var(--line)] bg-dark-200 text-apagado hover:border-brand/40 hover:text-crema'
             }`}
           >
             {cat.name}
-            <span className={`text-xs rounded-full px-1.5 py-0.5 font-bold ${
+            <span className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${
               active === cat.slug ? 'bg-black/15' : 'bg-white/10'
             }`}>
               {cat._count?.products ?? 0}

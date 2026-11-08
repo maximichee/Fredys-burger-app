@@ -1,35 +1,21 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { Parrilla } from '@/components/fredys/Piezas';
 
-export const metadata: Metadata = { title: 'Página no encontrada | Fredys Burger' };
+export const metadata: Metadata = { title: 'Página no encontrada' };
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center text-center px-4 bg-dark">
-      <style>{`
-        @keyframes flicker {
-          0%,94%,100%{opacity:1} 95%{opacity:.5} 97%{opacity:1} 98%{opacity:.3}
-        }
-        @keyframes wobble {
-          0%,100%{transform:rotate(-5deg)} 50%{transform:rotate(5deg)}
-        }
-        .anim-flicker { animation: flicker 3s infinite; }
-        .anim-wobble  { display:inline-block; animation: wobble 2.4s ease-in-out infinite; }
-      `}</style>
-
-      <h1 className="anim-flicker text-[9rem] font-extrabold leading-none text-brand">404</h1>
-      <span className="anim-wobble text-5xl mt-1 mb-6">🍔</span>
-      <p className="text-2xl font-extrabold mb-2">Esta página se quemó en la plancha</p>
-      <p className="text-white/45 mb-8 max-w-xs leading-relaxed">
-        La URL que buscás no existe o fue movida.<br />Las hamburguesas siguen esperándote.
-      </p>
-      <div className="flex gap-3 flex-wrap justify-center">
-        <Link href="/" className="bg-brand text-black font-bold px-7 py-3 rounded-full hover:bg-orange-500 transition-colors">
-          Volver al inicio
-        </Link>
-        <Link href="/#menu" className="border border-white/15 text-white/70 font-semibold px-7 py-3 rounded-full hover:border-brand/50 hover:text-brand transition-colors">
-          Ver el menú
-        </Link>
+    <div className="cuadrille relative flex min-h-screen flex-col items-center justify-center overflow-clip px-[var(--gutter)] text-center">
+      <Parrilla id="plato-404" className="pointer-events-none absolute left-1/2 top-1/2 h-[min(90vw,560px)] w-[min(90vw,560px)] -translate-x-1/2 -translate-y-1/2 opacity-50" />
+      <div className="relative">
+        <p className="titulo sticker text-[clamp(7rem,40vw,14rem)] leading-none">404</p>
+        <h1 className="titulo mt-4 text-[clamp(2rem,8vw,3.2rem)]">Esta página se quemó en la plancha</h1>
+        <p className="mx-auto mt-3 max-w-xs text-apagado">La dirección que buscás no existe o se movió. Las burgers siguen esperándote.</p>
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <Link href="/#menu" className="btn-fredys">Armá tu pedido</Link>
+          <Link href="/" className="btn-borde">Volver al inicio</Link>
+        </div>
       </div>
     </div>
   );

@@ -2,34 +2,248 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   Fredy's Burger · dirección de arte "Parrilla de noche"
+   Valores técnicos y contrastes: ver LEEME-REDISENO.md
+   ========================================================================== */
+
 @layer base {
   :root {
+    /* Color */
     --brand: #fb8500;
-    --brand-strong: #ff6b00;
+    --brand-hover: #ff9d33;
+    --cta: #fb8500;
+    --cta-ink: #160d09;
+    --bg: #0f0b09;
+    --bg-2: #17110d;
+    --cream: #fff3e0;
+    --muted: #c9b3a1;
+    --choco: #3a1f1a;
+    --cuero: #5a3a33;
+    --cheddar: #ffc23d;
+    --line: rgba(255, 214, 170, 0.14);
+    /* Letras */
+    --font-display: var(--font-anton), Impact, 'Arial Narrow', sans-serif;
+    --font-body: var(--font-poppins), system-ui, sans-serif;
+    /* Forma */
+    --r-xl: 36px; --r-lg: 28px; --r-md: 18px; --r-sm: 12px;
+    /* Movimiento (pareja de M en lib/motion.ts) */
+    --ease: cubic-bezier(.22, 1, .36, 1);
+    --ease-io: cubic-bezier(.76, 0, .24, 1);
+    --ease-pop: cubic-bezier(.34, 1.75, .68, 1);
+    --dur: .8s; --dist: 56px; --t-hover: .35s;
+    /* Espacio */
+    --gutter: clamp(16px, 4vw, 56px);
+    --section-y: clamp(72px, 10vw, 140px);
   }
 
-  html { scroll-behavior: smooth; }
+  html { background: var(--bg); scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 
   body {
-    @apply bg-dark text-white font-sans antialiased;
+    @apply bg-dark text-crema font-sans antialiased;
+    overflow-x: clip;
   }
 
-  ::selection {
-    @apply bg-brand/30 text-white;
-  }
+  ::selection { background: rgba(251, 133, 0, .35); color: var(--cream); }
 
-  /* Scrollbar personalizado */
+  :focus-visible { outline: 3px solid var(--cream); outline-offset: 3px; }
+
   ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { @apply bg-dark-100; }
-  ::-webkit-scrollbar-thumb { @apply bg-dark-300 rounded-full; }
-  ::-webkit-scrollbar-thumb:hover { @apply bg-brand/60; }
+  ::-webkit-scrollbar-track { background: var(--bg-2); }
+  ::-webkit-scrollbar-thumb { background: var(--cuero); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(251, 133, 0, .6); }
 }
+
+/* Lenis 1.3.11 */
+html.lenis, html.lenis body { height: auto; }
+.lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+.lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-smooth iframe { pointer-events: none; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+
+@layer components {
+  /* Letra sticker: crema, borde naranja y sombra marrón, como el logo */
+  .sticker {
+    color: var(--cream);
+    -webkit-text-stroke: .07em var(--brand);
+    paint-order: stroke fill;
+    text-shadow: .045em .06em 0 var(--choco), .07em .09em 0 var(--choco);
+  }
+  .sticker .clave { color: var(--brand); -webkit-text-stroke-color: var(--cream); }
+  .sticker--sm { -webkit-text-stroke-width: .05em; text-shadow: .04em .05em 0 var(--choco); }
+
+  .titulo { font-family: var(--font-display); font-weight: 400; text-transform: uppercase; letter-spacing: .01em; line-height: 1.02; }
+
+  /* Cuadrillé de la gorra como textura */
+  .cuadrille {
+    background-image:
+      repeating-linear-gradient(45deg, rgba(255, 214, 170, .05) 0 2px, transparent 2px 22px),
+      repeating-linear-gradient(-45deg, rgba(255, 214, 170, .05) 0 2px, transparent 2px 22px);
+  }
+  /* Franja de cuadrillé que separa categorías */
+  .franja {
+    height: 10px; border-radius: 99px; opacity: .7;
+    background-image:
+      repeating-linear-gradient(45deg, var(--cuero) 0 2px, transparent 2px 9px),
+      repeating-linear-gradient(-45deg, var(--cuero) 0 2px, transparent 2px 9px);
+  }
+
+  /* Vidrio tostado */
+  .vidrio {
+    position: relative; isolation: isolate;
+    background: linear-gradient(160deg, rgba(90, 58, 51, .42), rgba(23, 17, 13, .62));
+    border: 1px solid var(--line);
+    -webkit-backdrop-filter: blur(14px) saturate(1.15);
+    backdrop-filter: blur(14px) saturate(1.15);
+    box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .8);
+  }
+  .vidrio::before {
+    content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+    background-image:
+      repeating-linear-gradient(45deg, rgba(255, 214, 170, .035) 0 1px, transparent 1px 16px),
+      repeating-linear-gradient(-45deg, rgba(255, 214, 170, .035) 0 1px, transparent 1px 16px);
+  }
+
+  /* Ceja con semilla */
+  .ceja {
+    display: inline-flex; align-items: center; gap: .6em; margin-bottom: .9rem;
+    font-weight: 600; font-size: .8rem; letter-spacing: .14em; text-transform: uppercase; color: var(--brand);
+  }
+  .ceja::before { content: ""; width: .7em; height: .42em; border-radius: 50%; background: var(--cream); transform: rotate(-24deg); }
+
+  /* Botón principal: sombra dura marrón como el logo; sube al pasar el mouse y se hunde al tocarlo */
+  .btn-fredys {
+    display: inline-flex; align-items: center; justify-content: center; gap: .7em;
+    min-height: 56px; padding: .95em 1.6em .95em 1.7em; border: 0; border-radius: 999px;
+    background: var(--cta); color: var(--cta-ink); font-weight: 800; font-size: 1.05rem; line-height: 1.1;
+    text-decoration: none; cursor: pointer;
+    box-shadow: 0 .32em 0 var(--choco), 0 .32em 0 1px rgba(255, 214, 170, .18);
+    transition: background var(--t-hover) var(--ease), transform var(--t-hover) var(--ease), box-shadow var(--t-hover) var(--ease);
+  }
+  .btn-fredys svg { width: 1.2em; height: 1.2em; flex-shrink: 0; transition: transform var(--t-hover) var(--ease); }
+  .btn-fredys:hover { background: var(--brand-hover); transform: translateY(-2px); box-shadow: 0 .45em 0 var(--choco), 0 .45em 0 1px rgba(255, 214, 170, .18); }
+  .btn-fredys:hover svg { transform: translateX(4px); }
+  .btn-fredys:active { transform: translateY(.28em); box-shadow: 0 .04em 0 var(--choco); }
+  .btn-fredys:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+  .btn-borde {
+    display: inline-flex; align-items: center; justify-content: center; gap: .6em; min-height: 48px; padding: .7em 1.3em;
+    border-radius: 999px; border: 1px solid var(--line); color: var(--cream); font-weight: 600; font-size: .95rem;
+    transition: border-color var(--t-hover) var(--ease), color var(--t-hover) var(--ease);
+  }
+  .btn-borde:hover { border-color: var(--brand); color: var(--brand); }
+  .btn-borde { white-space: nowrap; }
+  .btn-borde svg { width: 1.1em; height: 1.1em; flex-shrink: 0; transition: transform var(--t-hover) var(--ease); }
+  .btn-borde:hover svg { transform: translateX(4px); }
+
+  /* Botón "+" redondo */
+  .btn-mas {
+    display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; border: 0;
+    background: var(--cta); color: var(--cta-ink); cursor: pointer; box-shadow: 0 4px 0 var(--choco);
+    transition: transform var(--t-hover) var(--ease-pop), box-shadow var(--t-hover) var(--ease);
+  }
+  .btn-mas svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; }
+  .btn-mas:hover { transform: rotate(90deg); }
+  .btn-mas:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--choco); }
+
+  /* Ficha seleccionable (tamaños, envío, pago) */
+  .ficha {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px; padding: 12px 16px;
+    border-radius: var(--r-md); border: 2px solid var(--line); background: rgba(30, 22, 18, .7); cursor: pointer;
+    transition: border-color var(--t-hover) var(--ease), background var(--t-hover) var(--ease);
+  }
+  .ficha:hover { border-color: rgba(251, 133, 0, .45); }
+  .ficha[aria-pressed="true"], .ficha:has(input:checked) { border-color: var(--brand); background: rgba(251, 133, 0, .1); }
+
+  .campo {
+    width: 100%; min-height: 52px; padding: 14px 16px; border-radius: var(--r-md); border: 1px solid var(--line);
+    background: rgba(30, 22, 18, .8); color: var(--cream); font-size: 1rem;
+    transition: border-color var(--t-hover) var(--ease);
+  }
+  .campo::placeholder { color: rgba(201, 179, 161, .55); }
+  .campo:focus { outline: none; border-color: var(--brand); }
+
+  /* Marcador de dato pendiente: no se publica sin llenarlo */
+  .marcador { background: #ffe14d; color: #1a1300; padding: .1em .35em; border-radius: 4px; font-weight: 600; }
+
+  /* Semillas del pan */
+  .semilla { position: absolute; left: var(--x); top: var(--y); width: var(--s, 11px); height: calc(var(--s, 11px) * .56); pointer-events: none; }
+  .semilla i { display: block; width: 100%; height: 100%; border-radius: 50%; background: var(--cream); transform: rotate(var(--r, 0deg)); box-shadow: inset -1px -1px 0 rgba(58, 31, 26, .35); }
+  .semilla--cheddar i { background: var(--cheddar); }
+
+  /* Parrilla (cuadrillé de la gorra) */
+  .parrilla line { stroke: var(--cuero); stroke-width: 3; stroke-linecap: round; }
+  .parrilla .aro { fill: none; stroke: rgba(251, 133, 0, .28); stroke-width: 2; }
+
+  /* Al pasar el mouse sobre una foto, la parrilla se enciende naranja (gana al color que deja la animación) */
+  @media (hover: hover) {
+    .foto-parrilla .parrilla line { transition: stroke .5s var(--ease); }
+    .foto-parrilla:hover .parrilla line { stroke: var(--brand) !important; }
+  }
+
+  /* Cheddar que chorrea sobre la barra "Ver tu pedido": más amarillo que el naranja del botón, con sombra */
+  .queso-barra {
+    visibility: hidden; transform-origin: 50% 0;
+    filter: hue-rotate(14deg) saturate(1.1) brightness(1.08) drop-shadow(0 3px 0 var(--choco)) drop-shadow(0 6px 10px rgba(0, 0, 0, .45));
+  }
+
+  /* Foto cuadrada o ancha de la ficha: plato redondo con el borde difuminado sobre la parrilla */
+  .foto-plato {
+    overflow: hidden; border-radius: 50%;
+    -webkit-mask-image: radial-gradient(circle, #000 60%, transparent 71%);
+    mask-image: radial-gradient(circle, #000 60%, transparent 71%);
+  }
+
+  /* Foto de la ficha sin caja: el fondo oscuro de la foto toma el color de la página y los bordes se desvanecen */
+  .foto-fundida {
+    mix-blend-mode: lighten;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent), linear-gradient(to bottom, transparent, #000 11%, #000 88%, transparent);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent), linear-gradient(to bottom, transparent, #000 11%, #000 88%, transparent);
+    mask-composite: intersect;
+  }
+
+  /* Sello que gira */
+  .sello { transform-box: view-box; transform-origin: 50% 50%; animation: girar 20s linear infinite; }
+  @keyframes girar { to { rotate: 360deg; } }
+
+  /* Máscaras de títulos divididos por líneas: aire para colitas y sombras */
+  .linea-mask { padding: .15em .14em .15em 0; margin: -.15em -.14em -.15em 0; }
+}
+
+/* ---------- Portada ---------- */
+.hero__line { display: block; overflow: hidden; padding: .15em .14em .15em 0; margin: -.15em -.14em -.15em 0; }
+.hero__line-in { display: block; }
+[data-hero-cta] { position: relative; z-index: 2; }
+
+/* ---------- Cheddar que chorrea (data-chorro) ---------- */
+.chorro { position: absolute; z-index: 0; pointer-events: none; }
+.chorro--recortado { -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent); mask-image: linear-gradient(to bottom, #000 72%, transparent); }
+.chorro--fundido img { -webkit-mask-image: linear-gradient(to bottom, transparent, #000 14%); mask-image: linear-gradient(to bottom, transparent, #000 14%); }
+.chorro.chorro--estirado img { height: 100%; object-fit: fill; }
+.chorro img { display: block; width: 100%; height: auto; filter: drop-shadow(0 12px 20px rgba(0, 0, 0, .45)); will-change: clip-path, transform; }
+
+/* Estados de entrada: solo con JS y con rescate por tiempo */
+.js .hero__line-in { transform: translateY(130%); animation: lineaRescate 0s 12s forwards; }
+.js [data-hero-in], .js [data-hero-img], .js .hero .parrilla, .js .hero .semilla { visibility: hidden; animation: rescate 0s 4s forwards; }
+.firma-lista .hero__line-in, .firma-lista [data-hero-in], .firma-lista [data-hero-img], .firma-lista .hero .parrilla, .firma-lista .hero .semilla { animation: none; }
+.js [data-reveal] { opacity: 0; animation: revelaRescate 0s 5s forwards; }
+@keyframes lineaRescate { to { transform: none; } }
+@keyframes rescate { to { visibility: visible; } }
+@keyframes revelaRescate { to { opacity: 1; } }
 
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
   .text-balance { text-wrap: balance; }
+}
 
-  .price-format::before { content: '$'; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important; animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important; transition-delay: 0s !important; scroll-behavior: auto !important;
+  }
+  .js .hero__line-in { transform: none; }
+  .js [data-hero-in], .js [data-hero-img], .js .hero .parrilla, .js .hero .semilla { visibility: visible; }
+  .js [data-reveal] { opacity: 1; }
 }

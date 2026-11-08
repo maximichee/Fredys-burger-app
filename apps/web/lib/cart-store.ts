@@ -2,11 +2,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { CartItem } from '@fredys/types';
+import { medirItems, type Origen } from './medir';
 
 interface CartStore {
   items: CartItem[];
   isOpen: boolean;
-  addItem: (item: CartItem) => void;
+  /** abrir=false suma sin abrir el panel (el "+" del menú avisa con la semilla que vuela al carrito) */
+  addItem: (item: CartItem, abrir?: boolean, origen?: Origen) => void;
   removeItem: (productId: string, priceLabel: string) => void;
   updateQuantity: (productId: string, priceLabel: string, qty: number) => void;
   updateComment: (productId: string, priceLabel: string, comment: string) => void;
@@ -23,7 +25,8 @@ export const useCart = create<CartStore>()(
       items: [],
       isOpen: false,
 
-      addItem: (item) => {
+      addItem: (item, abrir = true, origen) => {
+        medirItems('add_to_cart', [item], origen ? { origen } : {});
         const existing = get().items.find(
           (i) => i.productId === item.productId && i.priceLabel === item.priceLabel,
         );
@@ -38,7 +41,7 @@ export const useCart = create<CartStore>()(
         } else {
           set((s) => ({ items: [...s.items, item] }));
         }
-        set({ isOpen: true });
+        if (abrir) set({ isOpen: true });
       },
 
       removeItem: (productId, priceLabel) =>
@@ -72,7 +75,7 @@ export const useCart = create<CartStore>()(
         })),
 
       clearCart: () => set({ items: [] }),
-      openCart:  () => set({ isOpen: true }),
+      openCart:  () => { medirItems('view_cart', get().items); set({ isOpen: true }); },
       closeCart: () => set({ isOpen: false }),
 
       subtotal: () => get().items.reduce((s, i) => s + i.price * i.quantity, 0),

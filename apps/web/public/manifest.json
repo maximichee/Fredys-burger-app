@@ -1,18 +1,24 @@
 {
-  "name": "Fredys Burger",
-  "short_name": "Fredys",
-  "description": "Las mejores hamburguesas artesanales de Santa Fe",
-  "start_url": "/",
+  "id": "/",
+  "name": "Fredy's Burger",
+  "short_name": "Fredy's",
+  "description": "Burgers artesanales en pan de papa. Pedí online y retirá en el local o recibila en tu casa. Santa Fe.",
+  "start_url": "/?origen=app",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0f0f0f",
-  "theme_color": "#fb8500",
-  "lang": "es",
+  "orientation": "portrait",
+  "background_color": "#0f0b09",
+  "theme_color": "#0f0b09",
+  "lang": "es-AR",
+  "dir": "ltr",
+  "categories": ["food", "shopping"],
   "icons": [
-    {
-      "src": "/logo.png",
-      "sizes": "any",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
+    { "src": "/iconos/icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/iconos/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/iconos/icono-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Ver el menú", "short_name": "Menú", "url": "/?origen=app#menu", "icons": [{ "src": "/iconos/icono-192.png", "sizes": "192x192" }] },
+    { "name": "Mi pedido", "short_name": "Pedido", "url": "/carrito", "icons": [{ "src": "/iconos/icono-192.png", "sizes": "192x192" }] }
   ]
 }

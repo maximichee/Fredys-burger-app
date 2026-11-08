@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3000",
+    "fotos": "node scripts/optimizar-fotos.mjs",
+    "prebuild": "node scripts/optimizar-fotos.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -12,11 +14,13 @@
   "dependencies": {
     "@fredys/types": "workspace:*",
     "framer-motion": "^11.11.0",
+    "gsap": "3.13.0",
+    "lenis": "1.3.11",
     "next": "15.3.8",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "zustand": "^5.0.2",
-    "socket.io-client": "^4.8.0"
+    "socket.io-client": "^4.8.0",
+    "zustand": "^5.0.2"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

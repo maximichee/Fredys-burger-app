@@ -1,104 +1,84 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
+import Link from 'next/link';
+import { Parrilla, Semillas, SEMILLAS_CHICAS, IconoFlecha, Chorro } from '@/components/fredys/Piezas';
 
 export const metadata: Metadata = {
-  title: 'Nosotros | Fredys Burger',
-  description: 'Conocé la historia detrás de Fredys Burger, las mejores hamburguesas artesanales de Santa Fe.',
+  title: 'Nosotros',
+  description: "Conocé la historia detrás de Fredy's Burger: burgers artesanales en pan de papa, en Santa Fe.",
 };
 
-const VALUES = [
-  { icon: '🥩', title: 'Calidad real',    desc: 'Ingredientes frescos todos los días. Sin congelados, sin atajos.' },
-  { icon: '🔥', title: 'Pasión',           desc: 'Cada burger sale de la plancha con dedicación, no de una cadena de producción.' },
-  { icon: '🤝', title: 'Cercanía',         desc: 'Somos de Santa Fe, para Santa Fe. Tu pedido lo hace una persona, no un robot.' },
-  { icon: '⚡', title: 'Rapidez',          desc: 'Artesanal no significa lento. Te preparamos todo con la calidad que merecés, sin hacerte esperar de más.' },
+// Textos del dueño (página Nosotros anterior)
+const VALORES = [
+  { title: 'Calidad real', desc: 'Ingredientes frescos todos los días. Sin congelados, sin atajos.' },
+  { title: 'Pasión',       desc: 'Cada burger sale de la plancha con dedicación, no de una cadena de producción.' },
+  { title: 'Cercanía',     desc: 'Somos de Santa Fe, para Santa Fe. Tu pedido lo hace una persona, no un robot.' },
+  { title: 'Rapidez',      desc: 'Artesanal no significa lento. Te preparamos todo con la calidad que merecés, sin hacerte esperar de más.' },
 ];
 
 export default function NosotrosPage() {
   return (
     <>
-      {/* Hero */}
-      <section className="pt-16 pb-16 text-center bg-gradient-to-b from-[#1a0a00] to-dark">
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-brand mb-3">Nuestra Historia</h1>
-        <p className="text-white/60 text-lg max-w-md mx-auto px-4">Artesanales de verdad, desde el primer día.</p>
+      {/* ===== ENCABEZADO ===== */}
+      <section className="cuadrille px-[var(--gutter)] pb-12 pt-[calc(var(--nav-h,92px)+40px)]">
+        <div className="mx-auto max-w-6xl">
+          <p className="ceja">Nuestra historia</p>
+          <h1 className="titulo sticker text-[clamp(3rem,13vw,7rem)] leading-[.95]" data-split>Artesanales de <span className="clave">verdad</span></h1>
+          <p className="mt-5 text-lg text-apagado" data-reveal>Desde el primer día.</p>
+        </div>
       </section>
+      {/* ===== /ENCABEZADO ===== */}
 
-      {/* Historia */}
-      <section className="max-w-6xl mx-auto px-4 py-16 space-y-20">
-
-        {/* Bloque 1 */}
-        <div className="grid md:grid-cols-2 gap-10 items-center">
-          <div className="relative aspect-square rounded-2xl overflow-hidden bg-dark-200">
-            <Image
-              src="/logo.png"
-              alt="Fredys Burger"
-              fill
-              className="object-contain p-10"
-            />
+      {/* ===== HISTORIA ===== */}
+      <section className="mx-auto grid max-w-6xl items-center gap-12 overflow-x-clip px-[var(--gutter)] py-[var(--section-y)] lg:grid-cols-2">
+        <div className="foto-parrilla relative mx-auto aspect-square w-full max-w-[520px]" data-burst>
+          {/* Salpicadura de cheddar detrás del plato: se abre mientras bajás */}
+          <Chorro pieza="mancha" modo="mancha" className="left-1/2 top-[58%] w-[125%] -translate-x-1/2 -translate-y-1/2" />
+          <Parrilla id="plato-nosotros" className="absolute inset-0 h-full w-full" />
+          <div className="absolute inset-[6%] overflow-hidden rounded-full bg-black">
+            <Image src="/img/rediseno/nosotros-bacon.webp" alt="Bacon Cheeseburger con papas" fill sizes="(max-width: 1024px) 90vw, 520px" className="object-cover [object-position:40%_55%]" />
           </div>
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-brand mb-4">¿Quiénes somos?</h2>
-            <p className="text-white/70 leading-relaxed mb-4">
-              Fredys Burger nació de una pasión genuina por la buena hamburguesa. No la del delivery genérico, sino la que se hace con tiempo, con ingredientes frescos y con ganas reales de hacerte feliz.
-            </p>
-            <p className="text-white/70 leading-relaxed">
-              Arrancamos chicos, con una sola receta y muchas ganas. Hoy tenemos una carta amplia, pero la filosofía sigue siendo la misma: cada burger que sale de nuestra cocina tiene que ser la mejor que comiste.
-            </p>
+          <Semillas items={SEMILLAS_CHICAS} />
+        </div>
+        <div>
+          <h2 className="titulo text-[clamp(2.4rem,9vw,4rem)]" data-split>¿Quiénes somos?</h2>
+          <div className="mt-5 space-y-4 text-lg leading-relaxed text-apagado" data-reveal>
+            <p>Fredys Burger nació de una pasión genuina por la buena hamburguesa. No la del delivery genérico, sino la que se hace con tiempo, con ingredientes frescos y con ganas reales de hacerte feliz.</p>
+            <p>Arrancamos chicos, con una sola receta y muchas ganas. Hoy tenemos una carta amplia, pero la filosofía sigue siendo la misma: cada burger que sale de nuestra cocina tiene que ser la mejor que comiste.</p>
+          </div>
+          <h2 className="titulo mt-12 text-[clamp(2rem,7vw,3rem)]" data-split>Hecho con amor (y mucho cheddar)</h2>
+          <div className="mt-4 space-y-4 text-lg leading-relaxed text-apagado" data-reveal>
+            <p>Cada ingrediente es elegido con criterio. La carne es de calidad, el pan es de papa, y las salsas las hacemos nosotros. Nada viene de una bolsa anónima.</p>
+            <p>Abrimos de martes a domingo a partir de las 19:30, porque creemos que la noche merece una buena hamburguesa.</p>
           </div>
         </div>
-
-        {/* Bloque 2 */}
-        <div className="grid md:grid-cols-2 gap-10 items-center">
-          <div className="md:order-2 relative aspect-square rounded-2xl overflow-hidden bg-dark-200">
-            <Image
-              src="/img/b/b1.1.png"
-              alt="Hamburguesas artesanales"
-              fill
-              className="object-cover"
-            />
-          </div>
-          <div className="md:order-1">
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-brand mb-4">Hecho con amor (y mucho cheddar)</h2>
-            <p className="text-white/70 leading-relaxed mb-4">
-              Cada ingrediente es elegido con criterio. La carne es de calidad, el pan es de papa, y las salsas las hacemos nosotros. Nada viene de una bolsa anónima.
-            </p>
-            <p className="text-white/70 leading-relaxed">
-              Abrimos de martes a domingo a partir de las 19:30hs, porque creemos que la noche merece una buena hamburguesa.
-            </p>
-          </div>
-        </div>
-
       </section>
+      {/* ===== /HISTORIA ===== */}
 
-      {/* Valores */}
-      <section className="bg-dark-100 py-16">
-        <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-brand text-center mb-12">Lo que nos mueve</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {VALUES.map((v) => (
-              <div
-                key={v.title}
-                className="bg-dark-200 border border-brand/15 rounded-2xl p-8 text-center hover:border-brand/50 hover:-translate-y-1 transition-all"
-              >
-                <div className="text-4xl mb-4">{v.icon}</div>
-                <h3 className="font-bold text-brand mb-2">{v.title}</h3>
-                <p className="text-white/60 text-sm leading-relaxed">{v.desc}</p>
-              </div>
+      {/* ===== LO QUE NOS MUEVE ===== */}
+      <section className="bg-dark-100 py-[var(--section-y)]">
+        <div className="mx-auto max-w-6xl px-[var(--gutter)]">
+          <p className="ceja">Lo que nos mueve</p>
+          <ol className="mt-4">
+            {VALORES.map((v, i) => (
+              <li key={v.title} className="grid gap-2 border-b border-[var(--line)] py-7 md:grid-cols-[120px_1fr_1.4fr] md:items-baseline md:gap-8" data-reveal>
+                <span className="titulo text-5xl text-cuero">0{i + 1}</span>
+                <h3 className="titulo text-3xl">{v.title}</h3>
+                <p className="text-apagado">{v.desc}</p>
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
       </section>
+      {/* ===== /LO QUE NOS MUEVE ===== */}
 
-      {/* CTA */}
-      <section className="py-20 text-center">
-        <h2 className="text-3xl font-extrabold mb-3">¿Te convencimos?</h2>
-        <p className="text-white/55 mb-8">Vení a conocernos o pedí desde acá mismo.</p>
-        <a
-          href="/#menu"
-          className="inline-block bg-brand text-black font-extrabold px-10 py-4 rounded-full hover:bg-orange-500 transition-colors"
-        >
-          Ver el Menú
-        </a>
+      {/* ===== CIERRE ===== */}
+      <section className="px-[var(--gutter)] py-[var(--section-y)] text-center">
+        <h2 className="titulo sticker text-[clamp(2.8rem,11vw,5.5rem)]" data-split>¿Te convencimos?</h2>
+        <p className="mt-4 text-apagado">Elegí la tuya y la ponemos en la plancha.</p>
+        <Link href="/#menu" className="btn-fredys mt-8">Armá tu pedido <IconoFlecha /></Link>
       </section>
+      {/* ===== /CIERRE ===== */}
     </>
   );
 }

@@ -1,6 +1,10 @@
 import type { Metadata, Viewport } from 'next';
-import { Poppins } from 'next/font/google';
+import { Anton, Poppins } from 'next/font/google';
 import { CartHydration } from '@/components/CartHydration';
+import { MotionProvider } from '@/components/fredys/MotionProvider';
+import { RegistrarApp } from '@/components/fredys/App';
+import { Analitica } from '@/components/fredys/Analitica';
+import { SITE_URL } from '@/lib/sitio';
 import './globals.css';
 
 const poppins = Poppins({
@@ -10,23 +14,36 @@ const poppins = Poppins({
   display: 'swap',
 });
 
+const anton = Anton({
+  subsets: ['latin'],
+  weight: ['400'],
+  variable: '--font-anton',
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
-  title: { default: 'Fredys Burger | Hamburguesas Artesanales · Santa Fe', template: '%s | Fredys Burger' },
-  description: 'Las mejores hamburguesas artesanales de Santa Fe. Pedí online, retirá en el local o recibí a domicilio. Martes a domingo 19:30–23:30hs.',
+  metadataBase: new URL(SITE_URL),
+  title: { default: "Fredy's Burger | Burgers artesanales · Santa Fe", template: "%s | Fredy's Burger" },
+  description: 'Burgers artesanales en pan de papa. Pedí online y retirá en el local o recibila en tu casa. Martes a domingo de 19:30 a 23:30, Santa Fe.',
   keywords: ['hamburguesas', 'Santa Fe', 'artesanales', 'delivery', 'Fredys Burger'],
   openGraph: {
     type: 'website',
     locale: 'es_AR',
-    title: 'Fredys Burger | Hamburguesas Artesanales',
-    description: 'Las mejores hamburguesas artesanales de Santa Fe.',
-    siteName: 'Fredys Burger',
+    title: "Fredy's Burger · Sabor intenso en cada mordida",
+    description: 'Burgers artesanales en pan de papa. Pedí online y retirá en el local o recibila en tu casa.',
+    siteName: "Fredy's Burger",
+    images: [{ url: '/img/rediseno/og-imagen.jpg', width: 1200, height: 630, alt: "Mushroom Burger de Fredy's" }],
   },
   manifest: '/manifest.json',
-  icons: { icon: '/logo.png', apple: '/logo.png' },
+  icons: {
+    icon: [{ url: '/iconos/favicon-48.png', sizes: '48x48', type: 'image/png' }, { url: '/iconos/icono-192.png', sizes: '192x192', type: 'image/png' }],
+    apple: '/iconos/apple-touch-icon.png',
+  },
+  appleWebApp: { capable: true, title: "Fredy's", statusBarStyle: 'black' },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#fb8500',
+  themeColor: '#0f0b09',
   width: 'device-width',
   initialScale: 1,
 };
@@ -34,11 +51,21 @@ export const viewport: Viewport = {
 const schemaOrg = {
   '@context': 'https://schema.org',
   '@type': 'Restaurant',
-  name: 'Fredys Burger',
-  description: 'Las mejores hamburguesas artesanales de Santa Fe.',
+  '@id': `${SITE_URL}/#restaurante`,
+  name: "Fredy's Burger",
+  description: 'Burgers artesanales en pan de papa. Pedí online y retirá en el local o recibila en tu casa.',
+  url: SITE_URL,
+  logo: `${SITE_URL}/logo.png`,
+  image: `${SITE_URL}/img/rediseno/og-imagen.jpg`,
   telephone: '+5493425039876',
-  address: { '@type': 'PostalAddress', addressLocality: 'Santa Fe', addressCountry: 'AR' },
-  servesCuisine: 'Hamburguesas artesanales',
+  address: { '@type': 'PostalAddress', addressLocality: 'Santa Fe', addressRegion: 'Santa Fe', addressCountry: 'AR' },
+  areaServed: { '@type': 'City', name: 'Santa Fe' },
+  servesCuisine: ['Hamburguesas', 'Hamburguesas artesanales'],
+  priceRange: '$$',
+  currenciesAccepted: 'ARS',
+  paymentAccepted: 'Efectivo, Transferencia',
+  acceptsReservations: false,
+  hasMenu: `${SITE_URL}/#menu`,
   openingHoursSpecification: [{
     '@type': 'OpeningHoursSpecification',
     dayOfWeek: ['Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'],
@@ -49,8 +76,10 @@ const schemaOrg = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={poppins.variable}>
+    <html lang="es-AR" className={`${poppins.variable} ${anton.variable}`} suppressHydrationWarning>
       <head>
+        {/* Guardia: los estados ocultos para animar solo existen con JS (clase "js") */}
+        <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }}
@@ -58,7 +87,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <CartHydration />
-        {children}
+        <RegistrarApp />
+        <Analitica />
+        <MotionProvider>{children}</MotionProvider>
       </body>
     </html>
   );

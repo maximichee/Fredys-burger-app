@@ -1,9 +1,10 @@
 'use client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useCart } from '@/lib/cart-store';
-import { formatPrice } from '@/lib/utils';
-import { Button } from '@/components/ui/Button';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { useCart } from '@/lib/cart-store';
+import { formatPrice, imgSrc } from '@/lib/utils';
+import { IconoFlecha } from '@/components/fredys/Piezas';
 
 export function CartDrawer() {
   const { isOpen, closeCart, items, removeItem, updateQuantity, subtotal, clearCart } = useCart();
@@ -14,85 +15,77 @@ export function CartDrawer() {
     router.push('/checkout');
   };
 
+  const verMenu = () => {
+    closeCart();
+    router.push('/#menu');
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 z-50 backdrop-blur-sm"
-            onClick={closeCart}
-          />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" onClick={closeCart} />
           <motion.aside
             initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-            transition={{ type: 'spring', stiffness: 300, damping: 35 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-dark-100 z-50 flex flex-col shadow-2xl"
+            transition={{ duration: 0.55, ease: [0.76, 0, 0.24, 1] }}
+            className="cuadrille fixed bottom-0 right-0 top-0 z-50 flex w-full max-w-sm flex-col bg-dark-100 shadow-2xl"
+            aria-label="Tu pedido" role="dialog" aria-modal="true"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-5 border-b border-white/5">
-              <h2 className="font-bold text-lg">Tu pedido</h2>
-              <button onClick={closeCart} className="p-1 text-white/50 hover:text-white transition-colors text-xl">✕</button>
+            <div className="flex items-center justify-between border-b border-[var(--line)] p-5">
+              <h2 className="titulo text-3xl">Tu pedido</h2>
+              <button onClick={closeCart} className="grid h-11 w-11 place-items-center rounded-full text-xl text-apagado transition-colors hover:text-crema" aria-label="Cerrar">✕</button>
             </div>
 
-            {/* Items */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <div className="flex-1 space-y-3 overflow-y-auto p-4" data-lenis-prevent>
               {items.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center gap-4 text-white/40">
-                  <span className="text-5xl">🛒</span>
-                  <p className="font-semibold">Tu carrito está vacío</p>
-                  <Button variant="ghost" size="sm" onClick={closeCart}>Ver el menú</Button>
+                <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+                  <p className="titulo text-4xl text-cuero">Todavía nada</p>
+                  <p className="text-apagado">Elegí tus burgers y aparecen acá.</p>
+                  <button onClick={verMenu} className="btn-fredys">Armá tu pedido <IconoFlecha /></button>
                 </div>
               ) : (
                 items.map((item) => (
                   <motion.div
                     key={`${item.productId}-${item.priceLabel}`}
-                    layout
-                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: 40 }}
-                    className="flex gap-3 bg-dark-200 rounded-2xl p-3"
+                    layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: 40 }}
+                    className="vidrio flex gap-3 rounded-[var(--r-md)] p-3"
                   >
                     {item.image && (
-                      <img src={item.image} alt={item.name} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
+                      <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-[var(--r-sm)]">
+                        <Image src={imgSrc(item.image, 'sm')} alt={item.name} fill sizes="64px" className="object-cover" />
+                      </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm truncate">{item.name}</p>
-                      <p className="text-white/40 text-xs capitalize">{item.priceLabel}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <button
-                          onClick={() => updateQuantity(item.productId, item.priceLabel, item.quantity - 1)}
-                          className="w-6 h-6 rounded-full bg-dark-300 flex items-center justify-center text-sm hover:bg-brand/20 transition-colors"
-                        >−</button>
-                        <span className="text-sm font-bold w-4 text-center">{item.quantity}</span>
-                        <button
-                          onClick={() => updateQuantity(item.productId, item.priceLabel, item.quantity + 1)}
-                          className="w-6 h-6 rounded-full bg-dark-300 flex items-center justify-center text-sm hover:bg-brand/20 transition-colors"
-                        >+</button>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold">{item.name}</p>
+                      <p className="text-xs capitalize text-apagado">{item.priceLabel}</p>
+                      <div className="mt-2 flex items-center gap-1">
+                        <button onClick={() => updateQuantity(item.productId, item.priceLabel, item.quantity - 1)}
+                          className="grid h-9 w-9 place-items-center rounded-full bg-dark-300 text-lg transition-colors hover:bg-brand/25" aria-label={`Quitar uno de ${item.name}`}>−</button>
+                        <span className="w-6 text-center font-bold">{item.quantity}</span>
+                        <button onClick={() => updateQuantity(item.productId, item.priceLabel, item.quantity + 1)}
+                          className="grid h-9 w-9 place-items-center rounded-full bg-dark-300 text-lg transition-colors hover:bg-brand/25" aria-label={`Sumar uno de ${item.name}`}>+</button>
                       </div>
                     </div>
                     <div className="flex flex-col items-end justify-between">
-                      <button
-                        onClick={() => removeItem(item.productId, item.priceLabel)}
-                        className="text-white/25 hover:text-red-400 transition-colors text-sm"
-                      >✕</button>
-                      <span className="text-brand font-bold text-sm">{formatPrice(item.price * item.quantity)}</span>
+                      <button onClick={() => removeItem(item.productId, item.priceLabel)}
+                        className="grid h-8 w-8 place-items-center text-sm text-apagado/60 transition-colors hover:text-red-400" aria-label={`Sacar ${item.name}`}>✕</button>
+                      <span className="text-sm font-extrabold text-brand">{formatPrice(item.price * item.quantity)}</span>
                     </div>
                   </motion.div>
                 ))
               )}
             </div>
 
-            {/* Footer */}
             {items.length > 0 && (
-              <div className="p-5 border-t border-white/5 space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-white/60 text-sm">Subtotal</span>
-                  <span className="font-bold text-lg">{formatPrice(subtotal())}</span>
+              <div className="space-y-4 border-t border-[var(--line)] p-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-apagado">Subtotal</span>
+                  <span className="text-xl font-extrabold">{formatPrice(subtotal())}</span>
                 </div>
-                <Button variant="primary" size="lg" className="w-full" onClick={handleCheckout}>
-                  Confirmar pedido →
-                </Button>
-                <button onClick={clearCart} className="w-full text-center text-xs text-white/30 hover:text-white/60 transition-colors">
-                  Vaciar carrito
+                <button onClick={handleCheckout} className="btn-fredys w-full">Confirmar pedido <IconoFlecha /></button>
+                <button onClick={clearCart} className="w-full py-2 text-center text-sm text-apagado/70 transition-colors hover:text-crema">
+                  Vaciar pedido
                 </button>
               </div>
             )}
