@@ -81,6 +81,10 @@ export const pedidos = (estado?: string) =>
 
 export const pedido = (id: string) => db.order.findUniqueOrThrow({ where: { id }, include: { items: true } });
 
+/** Marca (o desmarca, si fue un error) que el local recibió el pago */
+export const marcarPago = (id: string, pagado: boolean) =>
+  db.order.update({ where: { id }, data: { paidAt: pagado ? new Date() : null }, include: { items: true } });
+
 export function cambiarEstado(id: string, estado: string) {
   if (!(estado in OrderStatus)) throw new ErrorPedido('Estado inválido');
   return db.order.update({ where: { id }, data: { status: estado as OrderStatus }, include: { items: true } });

@@ -120,6 +120,7 @@ export interface Order {
   subtotal: number;
   total: number;
   notes?: string;
+  paidAt?: Date | string | null;
   items: OrderItem[];
   createdAt: Date;
   updatedAt: Date;

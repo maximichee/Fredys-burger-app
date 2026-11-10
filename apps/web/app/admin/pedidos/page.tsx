@@ -6,9 +6,9 @@ import { formatPrice } from '@/lib/utils';
 import { useOrdersSocket } from '@/lib/use-orders-socket';
 import { useOrderSound } from '@/lib/use-order-sound';
 import type { Order, OrderStatus } from '@fredys/types';
+import { useAviso } from '@/components/admin/Controles';
 import { mensajePara, linkWa, leerDatosLocal, guardarDatosLocal, type DatosLocal } from '@/lib/mensajes-wa';
 
-const ALL_STATUSES: OrderStatus[] = ['PENDING','CONFIRMED','PREPARING','READY','DELIVERING','DELIVERED','CANCELLED'];
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
   PENDING: 'Pendiente', CONFIRMED: 'Confirmado', PREPARING: 'Preparando',
@@ -38,6 +38,37 @@ const TEXTO_BOTON: Partial<Record<OrderStatus, string>> = {
   DELIVERING: 'Salió el delivery', DELIVERED: 'Marcar entregado',
 };
 
+type Tab = 'atender' | 'pagados' | 'cancelados';
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'atender', label: '🔔 Por atender' },
+  { id: 'pagados', label: '✅ Pagados' },
+  { id: 'cancelados', label: 'Cancelados' },
+];
+
+/** Por atender: nuevos y aceptados sin pagar. Aceptado y pagado (o ya entregado) pasa a Pagados */
+function tabDe(o: Order): Tab {
+  if (o.status === 'CANCELLED') return 'cancelados';
+  if (o.status === 'DELIVERED' || (o.paidAt && o.status !== 'PENDING')) return 'pagados';
+  return 'atender';
+}
+
+/** Agrupa por día: "Hoy", "Ayer", "lunes 8 de noviembre" (la lista viene del más nuevo al más viejo) */
+function porDia(lista: Order[]) {
+  const hoy = new Date().toDateString(); const ayer = new Date(Date.now() - 864e5).toDateString();
+  const grupos: { clave: string; titulo: string; pedidos: Order[] }[] = [];
+  for (const o of lista) {
+    const d = new Date(o.createdAt); const clave = d.toDateString();
+    let g = grupos.find((x) => x.clave === clave);
+    if (!g) {
+      const titulo = clave === hoy ? 'Hoy' : clave === ayer ? 'Ayer'
+        : d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^./, (c) => c.toUpperCase());
+      grupos.push(g = { clave, titulo, pedidos: [] });
+    }
+    g.pedidos.push(o);
+  }
+  return grupos;
+}
+
 /** El próximo paso del pedido, con el texto del botón y si manda WhatsApp al cliente */
 function paso(o: Order, local: DatosLocal) {
   const estado = siguiente(o);
@@ -56,7 +87,8 @@ function paso(o: Order, local: DatosLocal) {
 
 export default function AdminPedidosPage() {
   const [orders, setOrders]   = useState<Order[]>([]);
-  const [filter, setFilter]   = useState<OrderStatus | 'ALL'>('ALL');
+  const [tab, setTab] = useState<Tab>('atender');
+  const { avisar: avisarToast, Aviso } = useAviso();
   const [selected, setSelected] = useState<Order | null>(null);
   const [local, setLocal] = useState<DatosLocal>({ direccion: '', alias: '' });
   const [verDatos, setVerDatos] = useState(false);
@@ -81,7 +113,18 @@ export default function AdminPedidosPage() {
     },
   });
 
-  const filtered = filter === 'ALL' ? orders : orders.filter((o) => o.status === filter);
+  const filtered = orders.filter((o) => tabDe(o) === tab);
+  const grupos = porDia(filtered);
+
+  /** "Recibí el pago": si ya estaba aceptado, pasa a la pestaña Pagados */
+  const marcarPago = async (order: Order, pagado: boolean) => {
+    try {
+      const o = await adminFetch<Order>(`/orders/${order.id}/pago`, token, { method: 'PATCH', body: JSON.stringify({ pagado }) });
+      setOrders((prev) => prev.map((x) => (x.id === o.id ? o : x)));
+      setSelected((prev) => (prev?.id === o.id ? o : prev));
+      if (pagado && tabDe(o) === 'pagados') avisarToast(`Pedido de ${o.customerName.split(' ')[0]} pasó a "Pagados"`);
+    } catch (e) { avisarToast((e as Error).message, true); }
+  };
 
   /** Cambia el estado y, si corresponde, abre WhatsApp con el mensaje para el cliente ya escrito */
   const pasarA = async (order: Order, estado: OrderStatus, avisar: boolean) => {
@@ -138,25 +181,32 @@ export default function AdminPedidosPage() {
         </div>
       )}
 
-      {/* Filtros */}
+      {/* Pestañas: lo que hay que atender queda solo; lo pagado y lo cancelado va aparte */}
       <div className="flex gap-2 overflow-x-auto no-scrollbar">
-        {(['ALL', ...ALL_STATUSES] as const).map((s) => (
-          <button key={s} onClick={() => setFilter(s)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-              filter === s ? 'bg-brand text-black' : 'bg-dark-200 text-white/50 hover:text-white'
-            }`}>
-            {s === 'ALL' ? 'Todos' : STATUS_LABELS[s]}
-            <span className="ml-1 opacity-60">
-              {s === 'ALL' ? orders.length : orders.filter((o) => o.status === s).length}
-            </span>
-          </button>
-        ))}
+        {TABS.map((t) => {
+          const n = orders.filter((o) => tabDe(o) === t.id).length;
+          return (
+            <button key={t.id} onClick={() => { setTab(t.id); setSelected(null); }}
+              className={`flex-shrink-0 rounded-full px-4 py-2 text-sm font-bold transition-all ${
+                tab === t.id ? 'bg-brand text-black' : 'bg-dark-200 text-white/50 hover:text-white'}`}>
+              {t.label} <span className="ml-1 opacity-60">{n}</span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="flex-1 grid lg:grid-cols-[1fr_360px] gap-4 min-h-0 lg:overflow-hidden">
         {/* Lista */}
         <div className="space-y-2 lg:overflow-y-auto lg:pr-1">
-          {filtered.map((order) => { const p = paso(order, local); return (
+          {grupos.map((g) => (
+          <section key={g.clave} className="space-y-2">
+            <h3 className="sticky top-0 z-10 flex items-baseline justify-between bg-[#0a0a0a] py-2 text-sm font-extrabold">
+              {g.titulo}
+              <span className="text-xs font-semibold normal-case text-white/40">
+                {g.pedidos.length} pedido{g.pedidos.length > 1 ? 's' : ''}{tab !== 'cancelados' ? ` · ${formatPrice(g.pedidos.reduce((s, o) => s + o.total, 0))}` : ''}
+              </span>
+            </h3>
+          {g.pedidos.map((order) => { const p = paso(order, local); const debePago = !order.paidAt && !['PENDING', 'CANCELLED'].includes(order.status); return (
             <div key={order.id} role="button" tabIndex={0} onClick={() => setSelected(order)}
               onKeyDown={(e) => e.key === 'Enter' && setSelected(order)}
               className={`w-full cursor-pointer text-left bg-dark-100 border rounded-2xl p-4 transition-all hover:border-white/15 ${
@@ -178,10 +228,17 @@ export default function AdminPedidosPage() {
                     {STATUS_LABELS[order.status as OrderStatus]}
                   </span>
                   <p className="text-brand font-bold text-sm mt-1">{formatPrice(order.total)}</p>
+                  {order.paidAt && <p className="mt-1 text-xs font-bold text-green-400">💰 Pagado</p>}
                 </div>
               </div>
+              {debePago && (
+                <button onClick={(e) => { e.stopPropagation(); marcarPago(order, true); }}
+                  className="mt-3 w-full rounded-xl border border-green-500/40 bg-green-500/10 py-2.5 text-sm font-bold text-green-300 hover:bg-green-500/20">
+                  💰 Recibí el pago {order.paymentMethod === 'CASH' ? '(efectivo)' : '(transferencia)'}
+                </button>
+              )}
               {p && (
-                <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
+                <div className="mt-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
                   <button onClick={() => pasarA(order, p.estado, p.wa)}
                     className={`flex-1 rounded-xl py-2.5 text-sm font-bold text-black transition-colors ${
                       p.wa ? 'bg-green-500 hover:bg-green-400' : 'bg-brand hover:bg-brand-strong'}`}>
@@ -195,8 +252,12 @@ export default function AdminPedidosPage() {
               )}
             </div>
           ); })}
+          </section>
+          ))}
           {filtered.length === 0 && (
-            <div className="text-center text-white/30 py-16 text-sm">No hay pedidos con este filtro</div>
+            <div className="text-center text-white/30 py-16 text-sm">
+              {tab === 'atender' ? 'Nada pendiente por ahora 🙌' : 'Todavía no hay pedidos acá'}
+            </div>
           )}
         </div>
 
@@ -220,7 +281,11 @@ export default function AdminPedidosPage() {
                   <a href={linkWa(selected)} target="_blank" rel="noopener noreferrer" className="ml-1 text-green-400 underline">abrir chat</a>
                 </p>
                 {selected.address && <p>📍 {selected.address}</p>}
-                <p>💳 {selected.paymentMethod === 'CASH' ? 'Efectivo' : 'Transferencia'}</p>
+                <p>💳 {selected.paymentMethod === 'CASH' ? 'Efectivo' : 'Transferencia'}
+                  {selected.paidAt
+                    ? <> · <b className='text-green-400'>pagado</b> <button onClick={() => marcarPago(selected, false)} className='ml-1 text-xs text-white/35 underline hover:text-white'>deshacer</button></>
+                    : selected.status !== 'CANCELLED' && <> · <button onClick={() => marcarPago(selected, true)} className='text-green-400 underline'>marcar pagado</button></>}
+                </p>
                 <p>🛵 {selected.deliveryMethod === 'PICKUP' ? 'Retiro en local' : 'Delivery'}</p>
               </div>
 
@@ -252,6 +317,7 @@ export default function AdminPedidosPage() {
           )}
         </AnimatePresence>
       </div>
+      {Aviso}
     </div>
   );
 }

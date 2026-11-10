@@ -78,6 +78,7 @@ model Order {
   subtotal       Int
   total          Int
   notes          String?
+  paidAt         DateTime?   // cuándo el local marcó "recibí el pago"
   items          OrderItem[]
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
