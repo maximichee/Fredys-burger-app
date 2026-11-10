@@ -7,6 +7,7 @@ import { useOrdersSocket } from '@/lib/use-orders-socket';
 import { useOrderSound } from '@/lib/use-order-sound';
 import type { Order, OrderStatus } from '@fredys/types';
 import { useAviso } from '@/components/admin/Controles';
+import { tabDe, type Tab } from '@/lib/estado-pedido';
 import { mensajePara, linkWa, leerDatosLocal, guardarDatosLocal, type DatosLocal } from '@/lib/mensajes-wa';
 
 
@@ -38,19 +39,12 @@ const TEXTO_BOTON: Partial<Record<OrderStatus, string>> = {
   DELIVERING: 'Salió el delivery', DELIVERED: 'Marcar entregado',
 };
 
-type Tab = 'atender' | 'pagados' | 'cancelados';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'atender', label: '🔔 Por atender' },
   { id: 'pagados', label: '✅ Pagados' },
   { id: 'cancelados', label: 'Cancelados' },
 ];
 
-/** Por atender: nuevos y aceptados sin pagar. Aceptado y pagado (o ya entregado) pasa a Pagados */
-function tabDe(o: Order): Tab {
-  if (o.status === 'CANCELLED') return 'cancelados';
-  if (o.status === 'DELIVERED' || (o.paidAt && o.status !== 'PENDING')) return 'pagados';
-  return 'atender';
-}
 
 /** Agrupa por día: "Hoy", "Ayer", "lunes 8 de noviembre" (la lista viene del más nuevo al más viejo) */
 function porDia(lista: Order[]) {

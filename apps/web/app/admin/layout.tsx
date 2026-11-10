@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const NAV = [
-  { href: '/admin',            label: 'Dashboard', icon: '📊' },
+  { href: '/admin',            label: 'Resumen',   icon: '📊' },
   { href: '/admin/pedidos',    label: 'Pedidos',   icon: '📦' },
   { href: '/admin/productos',  label: 'Productos', icon: '🍔' },
   { href: '/admin/categorias', label: 'Categorías',icon: '📂' },
@@ -66,7 +66,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </AnimatePresence>
 
       {/* ── SIDEBAR DESKTOP (siempre visible) ────────── */}
-      <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-56 bg-dark-100 border-r border-white/5 flex-col z-30">
+      <aside className="hidden md:flex fixed left-3 top-3 bottom-3 w-52 rounded-[28px] bg-[#1c1c1c] flex-col z-30 overflow-hidden">
         <SidebarContent pathname={pathname} logout={logout} />
       </aside>
 
@@ -104,9 +104,12 @@ function SidebarContent({
 }) {
   return (
     <>
-      <div className="p-5 border-b border-white/5">
-        <p className="font-extrabold text-brand text-lg">Fredys</p>
-        <p className="text-white/30 text-xs">Panel Admin</p>
+      <div className="flex items-center gap-3 p-5">
+        <img src="/logo.png" alt="" className="h-10 w-10 rounded-full object-contain" />
+        <div>
+          <p className="font-extrabold text-brand leading-tight">Fredy&apos;s</p>
+          <p className="text-white/30 text-[11px]">Panel del local</p>
+        </div>
       </div>
       <nav className="flex-1 p-3 space-y-1">
         {NAV.map((item) => (
@@ -114,13 +117,14 @@ function SidebarContent({
             key={item.href}
             href={item.href}
             onClick={onNav}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+            className={`relative flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
               pathname === item.href
-                ? 'bg-brand/15 text-brand'
+                ? 'bg-white/[0.06] text-brand'
                 : 'text-white/50 hover:text-white hover:bg-white/5'
             }`}
           >
-            <span>{item.icon}</span>{item.label}
+            {pathname === item.href && <span className="absolute -left-3 top-1/2 h-6 w-1.5 -translate-y-1/2 rounded-r-full bg-brand" />}
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.06]">{item.icon}</span>{item.label}
           </Link>
         ))}
       </nav>
