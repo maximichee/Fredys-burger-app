@@ -1,4 +1,4 @@
-import { producto, editarProducto, ocultarProducto, type ProductoEntrada } from '@/lib/server/menu';
+import { producto, editarProducto, borrarProducto, type ProductoEntrada } from '@/lib/server/menu';
 import { responder, soloAdmin, cuerpo, refrescarMenu } from '@/lib/server/http';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +14,7 @@ export const PATCH = (req: Request, { params }: Ctx) => soloAdmin(req, async () 
 });
 
 export const DELETE = (req: Request, { params }: Ctx) => soloAdmin(req, async () => {
-  const p = await ocultarProducto((await params).clave);
+  const p = await borrarProducto((await params).clave);
   refrescarMenu();
   return p;
 });

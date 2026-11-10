@@ -1,5 +1,6 @@
 import type { Category, Product } from '@fredys/types';
 import { db } from './db';
+import { ErrorPedido as ErrorMenu } from './pedidos'; // se responde como 400 con el mensaje
 
 /* Menú: lo mismo que hacía la API de NestJS (apps/api), ahora dentro de la web.
    Lo usan las páginas del servidor (directo) y las rutas /api (para el navegador y el panel). */
@@ -75,8 +76,8 @@ export async function editarProducto(id: string, d: ProductoEntrada) {
   });
 }
 
-/** "Borrar" deja el producto no disponible (los pedidos viejos lo siguen nombrando) */
-export const ocultarProducto = (id: string) => db.product.update({ where: { id }, data: { available: false } });
+/** Borra el producto y sus precios. Los pedidos viejos guardan su nombre y precio, así que no se pierden */
+export const borrarProducto = (id: string) => db.product.delete({ where: { id } });
 
 export type CategoriaEntrada = { slug?: string; name?: string; order?: number; active?: boolean };
 export const crearCategoria = (d: CategoriaEntrada) =>
@@ -87,4 +88,9 @@ export const editarCategoria = (id: string, d: CategoriaEntrada) =>
 /** Reordena: recibe los ids en el orden nuevo */
 export const ordenarCategorias = (ids: string[]) =>
   db.$transaction(ids.map((id, i) => db.category.update({ where: { id }, data: { order: i + 1 } })));
-export const ocultarCategoria = (id: string) => db.category.update({ where: { id }, data: { active: false } });
+/** Solo se borra vacía, para no perder productos sin querer */
+export async function borrarCategoria(id: string) {
+  const n = await db.product.count({ where: { categoryId: id } });
+  if (n) throw new ErrorMenu(`Tiene ${n} producto${n > 1 ? 's' : ''}. Borralos o pasalos a otra categoría primero.`);
+  return db.category.delete({ where: { id } });
+}

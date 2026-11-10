@@ -61,6 +61,19 @@ export function EditorProducto({
     }
   };
 
+  const borrar = async () => {
+    if (!producto) return;
+    if (!confirm(`¿Borrar "${producto.name}" para siempre?\nSi solo se terminó por hoy, mejor marcalo como "Agotado".`)) return;
+    setGuardando(true);
+    try {
+      await adminFetch(`/products/${producto.id}`, token(), { method: 'DELETE' });
+      onGuardado(`"${producto.name}" borrado`);
+    } catch (err) {
+      onError((err as Error).message);
+      setGuardando(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center sm:p-6" onClick={onCerrar}>
       <form
@@ -118,7 +131,14 @@ export function EditorProducto({
           </label>
         </div>
 
-        <div className="mt-6 flex gap-2">
+        {producto && (
+          <button type="button" disabled={guardando} onClick={borrar}
+            className="mt-5 w-full rounded-xl border border-red-500/30 py-2.5 text-sm font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-50">
+            Borrar producto
+          </button>
+        )}
+
+        <div className="mt-3 flex gap-2">
           <button type="button" onClick={onCerrar} className="flex-1 rounded-xl border border-white/10 py-3 text-sm font-bold text-white/60">Cancelar</button>
           <button disabled={guardando} className="flex-1 rounded-xl bg-brand py-3 text-sm font-bold text-black disabled:opacity-50">
             {guardando ? 'Guardando…' : 'Guardar'}

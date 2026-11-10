@@ -32,6 +32,19 @@ export default function AdminCategoriasPage() {
     guardar(c.id, { active: !c.active }, c.active ? `"${c.name}" quedó oculta` : `"${c.name}" se ve en el menú`);
   };
 
+  const borrar = async (c: Cat) => {
+    const n = c._count?.products ?? 0;
+    if (n) return avisar(`"${c.name}" tiene ${n} producto${n > 1 ? 's' : ''}: borralos o pasalos a otra categoría primero`, true);
+    if (!confirm(`¿Borrar la categoría "${c.name}"?`)) return;
+    setOcupado(c.id);
+    try {
+      await adminFetch(`/categories/${c.id}`, token(), { method: 'DELETE' });
+      await cargar();
+      avisar(`"${c.name}" borrada`);
+    } catch (e) { avisar((e as Error).message, true); }
+    setOcupado(null);
+  };
+
   const mover = async (i: number, d: -1 | 1) => {
     if (!cats) return;
     const lista = [...cats];
@@ -91,6 +104,8 @@ export default function AdminCategoriasPage() {
                       {c.name}
                       <button onClick={() => { setEditando(c.id); setNombre(c.name); }}
                         className="ml-2 text-xs font-normal text-white/30 hover:text-brand">editar</button>
+                      <button onClick={() => borrar(c)}
+                        className="ml-2 text-xs font-normal text-white/30 hover:text-red-400">borrar</button>
                     </p>
                     <p className="text-xs text-white/35">{c._count?.products ?? 0} productos</p>
                   </>
