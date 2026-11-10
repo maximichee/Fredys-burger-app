@@ -22,12 +22,13 @@ export function ImageUpload({ value, onChange, token }: ImageUploadProps) {
         headers: { Authorization: `Bearer ${token}` },
         body: form,
       });
-      const { url } = await res.json();
+      const { url, message } = await res.json();
+      if (!res.ok || !url) throw new Error(message);
       setPreview(url);
       onChange(url);
     } catch (err) {
       console.error(err);
-      alert('Error al subir la imagen');
+      alert(`No se pudo subir la imagen${(err as Error).message ? `: ${(err as Error).message}` : ''}`);
     } finally {
       setLoading(false);
     }
@@ -36,15 +37,15 @@ export function ImageUpload({ value, onChange, token }: ImageUploadProps) {
   return (
     <div
       onClick={() => inputRef.current?.click()}
-      className="relative border-2 border-dashed border-white/10 rounded-2xl overflow-hidden cursor-pointer hover:border-brand/40 transition-colors aspect-video flex items-center justify-center bg-dark-200"
+      className="relative border-2 border-dashed border-white/10 rounded-2xl overflow-hidden cursor-pointer hover:border-brand/40 transition-colors h-full w-full flex items-center justify-center bg-dark-200"
+      title="JPG, PNG o WebP · máx 5 MB"
     >
       {preview ? (
         <img src={preview} alt="preview" className="w-full h-full object-cover absolute inset-0" />
       ) : (
-        <div className="text-center text-white/30 p-4">
-          <p className="text-3xl mb-2">📷</p>
-          <p className="text-sm">Click para subir imagen</p>
-          <p className="text-xs mt-1">JPG, PNG, WebP · máx 5MB</p>
+        <div className="text-center text-white/30 p-2">
+          <p className="text-2xl">📷</p>
+          <p className="text-[11px] leading-tight">Subir foto</p>
         </div>
       )}
       {loading && (
@@ -53,8 +54,8 @@ export function ImageUpload({ value, onChange, token }: ImageUploadProps) {
         </div>
       )}
       {preview && !loading && (
-        <div className="absolute bottom-2 right-2 bg-dark/80 text-xs text-white/60 px-2 py-1 rounded-lg">
-          Click para cambiar
+        <div className="absolute inset-x-0 bottom-0 bg-black/70 py-0.5 text-center text-[10px] text-white/70">
+          Cambiar
         </div>
       )}
       <input

@@ -1,81 +1,100 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { adminFetch } from '@/lib/api';
-import { formatPrice } from '@/lib/utils';
-import type { Product } from '@fredys/types';
+import { formatPrice, imgSrc } from '@/lib/utils';
+import type { Category, Product } from '@fredys/types';
+import { Interruptor, useAviso, token } from '@/components/admin/Controles';
+import { EditorProducto } from '@/components/admin/EditorProducto';
 
 export default function AdminProductosPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [search, setSearch]     = useState('');
-  const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') ?? '' : '';
+  const [products, setProducts] = useState<Product[] | null>(null);
+  const [cats, setCats] = useState<Category[]>([]);
+  const [search, setSearch] = useState('');
+  const [cat, setCat] = useState('');
+  const [ocupado, setOcupado] = useState<string | null>(null);
+  const [editar, setEditar] = useState<Product | 'nuevo' | null>(null);
+  const { avisar, Aviso } = useAviso();
 
-  const load = () => adminFetch<Product[]>('/products', token).then(setProducts).catch(console.error);
-  useEffect(() => { load(); }, [token]);
+  const cargar = () => adminFetch<Product[]>('/products?todas=1', token()).then(setProducts).catch((e) => avisar(e.message, true));
+  useEffect(() => {
+    cargar();
+    adminFetch<Category[]>('/categories?todas=1', token()).then(setCats).catch(() => {});
+  }, []);
 
-  const toggleAvailable = async (product: Product) => {
-    await adminFetch(`/products/${product.id}`, token, {
-      method: 'PATCH',
-      body: JSON.stringify({ available: !product.available }),
-    });
-    load();
+  const alternar = async (p: Product) => {
+    setOcupado(p.id);
+    try {
+      await adminFetch(`/products/${p.id}`, token(), { method: 'PATCH', body: JSON.stringify({ available: !p.available }) });
+      setProducts((ps) => ps?.map((x) => (x.id === p.id ? { ...x, available: !p.available } : x)) ?? null);
+      avisar(p.available ? `"${p.name}" marcado como agotado` : `"${p.name}" vuelve a estar disponible`);
+    } catch (e) { avisar((e as Error).message, true); }
+    setOcupado(null);
   };
 
-  const filtered = products.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.category?.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtrados = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (products ?? []).filter((p) =>
+      (!cat || p.categoryId === cat) && (!q || p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q)));
+  }, [products, search, cat]);
+
+  const agotados = products?.filter((p) => !p.available).length ?? 0;
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-extrabold">Productos</h1>
-        <span className="text-white/40 text-sm">{products.length} en total</span>
+    <div className="mx-auto max-w-5xl space-y-4 p-6">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-extrabold">Productos</h1>
+          <p className="mt-1 text-sm text-white/40">
+            {products?.length ?? '…'} en total{agotados ? ` · ${agotados} agotados` : ''}. Marcá “Agotado” cuando se termina algo: deja de verse en la web.
+          </p>
+        </div>
+        <button onClick={() => setEditar('nuevo')} className="rounded-xl bg-brand px-4 py-2.5 text-sm font-bold text-black">+ Nuevo producto</button>
       </div>
 
-      <input value={search} onChange={(e) => setSearch(e.target.value)}
-        placeholder="Buscar producto o categoría..."
-        className="w-full bg-dark-100 border border-white/8 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-brand transition-colors placeholder:text-white/25" />
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar producto…"
+          className="w-full rounded-xl border border-white/8 bg-dark-100 px-4 py-2.5 text-sm placeholder:text-white/25 focus:border-brand focus:outline-none" />
+        <select value={cat} onChange={(e) => setCat(e.target.value)}
+          className="rounded-xl border border-white/8 bg-dark-100 px-3 py-2.5 text-sm focus:border-brand focus:outline-none sm:w-56">
+          <option value="">Todas las categorías</option>
+          {cats.map((c) => <option key={c.id} value={c.id}>{c.name}{c.active ? '' : ' (oculta)'}</option>)}
+        </select>
+      </div>
 
-      <div className="bg-dark-100 border border-white/5 rounded-2xl overflow-hidden">
-        <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 px-4 py-2 text-xs font-bold text-white/30 uppercase tracking-wider border-b border-white/5">
-          <span />
-          <span>Producto</span>
-          <span>Categoría</span>
-          <span>Precio base</span>
-          <span>Estado</span>
-        </div>
+      <div className="overflow-hidden rounded-2xl border border-white/5 bg-dark-100">
+        {products === null && <p className="py-10 text-center text-sm text-white/30">Cargando…</p>}
+        {products && filtrados.length === 0 && <p className="py-10 text-center text-sm text-white/30">No hay productos con ese filtro</p>}
         <div className="divide-y divide-white/5">
-          {filtered.map((product) => (
-            <div key={product.id} className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 px-4 py-3 items-center text-sm">
-              {product.images[0] ? (
-                <img src={`/${product.images[0]}`} alt="" className="w-10 h-10 rounded-xl object-cover" />
-              ) : (
-                <div className="w-10 h-10 rounded-xl bg-dark-300 flex items-center justify-center text-lg">🍔</div>
-              )}
-              <div>
-                <p className="font-semibold">{product.name}</p>
-                {product.description && (
-                  <p className="text-white/35 text-xs truncate max-w-xs">{product.description}</p>
-                )}
+          {filtrados.map((p) => (
+            <div key={p.id} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm sm:flex-nowrap">
+              <img src={imgSrc(p.images[0], 'sm')} alt="" className={`h-12 w-12 shrink-0 rounded-xl object-cover ${p.available ? '' : 'opacity-40 grayscale'}`} />
+              <div className="min-w-0 flex-1 basis-[calc(100%-64px)] sm:basis-auto">
+                <p className={`font-semibold ${p.available ? '' : 'text-white/45'}`}>
+                  {p.name} {p.featured && <span title="Destacado" className="text-brand">★</span>}
+                </p>
+                <p className="truncate text-xs text-white/35">
+                  {p.category?.name}{p.category && !p.category.active ? ' (oculta)' : ''} · {p.prices.map((x) => `${x.label} ${formatPrice(x.price)}`).join(' · ') || 'sin precio'}
+                </p>
               </div>
-              <span className="text-white/40 text-xs">{product.category?.name}</span>
-              <span className="text-brand font-bold">
-                {product.prices[0] ? formatPrice(product.prices[0].price) : '—'}
-              </span>
-              <button
-                onClick={() => toggleAvailable(product)}
-                className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${
-                  product.available
-                    ? 'bg-green-500/15 text-green-400 hover:bg-red-500/15 hover:text-red-400'
-                    : 'bg-red-500/15 text-red-400 hover:bg-green-500/15 hover:text-green-400'
-                }`}
-              >
-                {product.available ? 'Activo' : 'Inactivo'}
-              </button>
+              <div className="flex w-full items-center justify-between gap-3 pl-[60px] sm:w-auto sm:pl-0">
+                <button onClick={() => setEditar(p)} className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-bold text-white/70 hover:border-brand hover:text-brand">Editar</button>
+                <Interruptor prendido={p.available} onCambio={() => alternar(p)} si="Disponible" no="Agotado" ocupado={ocupado === p.id} />
+              </div>
             </div>
           ))}
         </div>
       </div>
+
+      {editar && (
+        <EditorProducto
+          producto={editar === 'nuevo' ? null : editar}
+          categorias={cats}
+          onCerrar={() => setEditar(null)}
+          onGuardado={(msg) => { setEditar(null); avisar(msg); cargar(); }}
+          onError={(msg) => avisar(msg, true)}
+        />
+      )}
+      {Aviso}
     </div>
   );
 }

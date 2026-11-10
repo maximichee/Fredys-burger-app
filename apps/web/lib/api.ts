@@ -34,5 +34,19 @@ export const adminLogin = (email: string, password: string) =>
     { method: 'POST', body: JSON.stringify({ email, password }) },
   );
 
-export const adminFetch = <T>(path: string, token: string, init?: RequestInit) =>
-  apiFetch<T>(path, { ...init, headers: { Authorization: `Bearer ${token}`, ...init?.headers } });
+export async function adminFetch<T>(path: string, token: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${BASE}/api${path}`, {
+    ...init,
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...init?.headers },
+  });
+  // Sesión vencida: de vuelta al login en vez de quedar con la pantalla vacía
+  if (res.status === 401 && typeof window !== 'undefined') {
+    localStorage.removeItem('admin_token');
+    window.location.href = '/admin/login';
+  }
+  if (!res.ok) {
+    const msg = await res.json().then((j) => j?.message).catch(() => null);
+    throw new Error(msg || `Error ${res.status}`);
+  }
+  return res.json() as Promise<T>;
+}
