@@ -78,7 +78,7 @@ export function EditorProducto({
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center sm:p-6" onClick={onCerrar}>
       <form
         onSubmit={guardar} onClick={(e) => e.stopPropagation()}
-        className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-white/10 bg-dark-100 p-5 sm:rounded-3xl"
+        className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-[28px] bg-[#232323] p-5 shadow-2xl sm:rounded-[28px] sm:p-6"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-extrabold">{producto ? 'Editar producto' : 'Nuevo producto'}</h2>
@@ -133,14 +133,14 @@ export function EditorProducto({
 
         {producto && (
           <button type="button" disabled={guardando} onClick={borrar}
-            className="mt-5 w-full rounded-xl border border-red-500/30 py-2.5 text-sm font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-50">
+            className="mt-5 w-full rounded-full border border-red-500/30 py-2.5 text-sm font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-50">
             Borrar producto
           </button>
         )}
 
         <div className="mt-3 flex gap-2">
-          <button type="button" onClick={onCerrar} className="flex-1 rounded-xl border border-white/10 py-3 text-sm font-bold text-white/60">Cancelar</button>
-          <button disabled={guardando} className="flex-1 rounded-xl bg-brand py-3 text-sm font-bold text-black disabled:opacity-50">
+          <button type="button" onClick={onCerrar} className="flex-1 rounded-full bg-white/[0.07] py-3 text-sm font-bold text-white/70">Cancelar</button>
+          <button disabled={guardando} className="flex-1 rounded-full bg-brand py-3 text-sm font-bold text-black disabled:opacity-50">
             {guardando ? 'Guardando…' : 'Guardar'}
           </button>
         </div>

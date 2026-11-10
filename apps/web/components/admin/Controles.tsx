@@ -44,4 +44,4 @@ export const slugDe = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 export const campo =
-  'w-full rounded-xl border border-white/10 bg-dark-200 px-3 py-2.5 text-sm focus:border-brand focus:outline-none placeholder:text-white/25';
+  'w-full rounded-2xl border border-white/10 bg-[#2e2e2e] px-3.5 py-2.5 text-sm focus:border-brand focus:outline-none placeholder:text-white/25';
