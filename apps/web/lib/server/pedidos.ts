@@ -19,7 +19,7 @@ const texto = (v: unknown, max: number, campo: string, opcional = false) => {
 type ItemEntrada = { productId?: string; priceLabel?: string; quantity?: number; comment?: string };
 type PedidoEntrada = {
   deliveryMethod?: string; paymentMethod?: string; customerName?: string; customerPhone?: string;
-  address?: string; zone?: string; deliveryCost?: number; notes?: string; items?: ItemEntrada[];
+  address?: string; zone?: string; deliveryCost?: number; notes?: string; items?: ItemEntrada[]; scheduledFor?: string;
 };
 
 export async function crearPedido(d: PedidoEntrada) {
@@ -35,6 +35,14 @@ export async function crearPedido(d: PedidoEntrada) {
   // El local le escribe al cliente por WhatsApp: hace falta el número completo
   if (String(d.customerPhone ?? '').replace(/\D/g, '').replace(/^0+/, '').length < 10)
     throw new ErrorPedido('Poné tu WhatsApp con código de área (ej: 342 503-9876)');
+
+  // Para más tarde: tiene que dar el tiempo de prepararlo (y no más de una semana)
+  let programado: Date | undefined;
+  if (d.scheduledFor) {
+    programado = new Date(String(d.scheduledFor));
+    const falta = programado.getTime() - Date.now();
+    if (isNaN(falta) || falta < 30 * 60e3 || falta > 7 * 864e5) throw new ErrorPedido('Ese horario ya no está disponible, elegí otro');
+  }
 
   // Precios de la base
   const ids = [...new Set(items.map((i) => String(i.productId)))];
@@ -64,6 +72,7 @@ export async function crearPedido(d: PedidoEntrada) {
       zone: texto(d.zone, 20, 'zona', true),
       notes: texto(d.notes, 500, 'notas', true),
       deliveryCost: envio,
+      scheduledFor: programado,
       subtotal,
       total: subtotal + envio,
       items: { create: lineas },

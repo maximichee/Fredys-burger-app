@@ -1,5 +1,5 @@
 import type { Order, OrderStatus } from '@fredys/types';
-import { formatPrice, DEMORA } from './utils';
+import { formatPrice, DEMORA, horarioProgramado } from './utils';
 
 /* Mensajes que el local le manda al cliente por WhatsApp desde el panel.
    El panel abre WhatsApp con el texto ya escrito: el admin solo toca "Enviar". */
@@ -65,7 +65,11 @@ export function mensajePara(estado: OrderStatus, o: Order, local: DatosLocal): s
       `💳 Pago: ${pago(o, local)}`,
       ...(o.notes ? [`📝 Aclaraciones: ${o.notes}`] : []),
       '',
-      `⏱️ Lo empezamos a preparar: está en ${DEMORA} aprox. ¡Gracias!`,
+      o.scheduledFor
+        ? (retiro
+          ? `⏰ Lo tenemos listo para retirar *${horarioProgramado(o.scheduledFor)}*. ¡Gracias!`
+          : `⏰ Te lo llevamos *${horarioProgramado(o.scheduledFor)}*. ¡Gracias!`)
+        : `⏱️ Lo empezamos a preparar: está en ${DEMORA} aprox. ¡Gracias!`,
     ].join('\n');
   }
   if (estado === 'READY' && retiro) {

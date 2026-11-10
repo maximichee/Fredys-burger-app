@@ -121,6 +121,7 @@ export interface Order {
   total: number;
   notes?: string;
   paidAt?: Date | string | null;
+  scheduledFor?: Date | string | null;
   items: OrderItem[];
   createdAt: Date;
   updatedAt: Date;
@@ -133,6 +134,7 @@ export interface CreateOrderDto {
   customerPhone: string;
   address?: string;
   zone?: string;
+  scheduledFor?: string;
   deliveryCost: number;
   notes?: string;
   items: {

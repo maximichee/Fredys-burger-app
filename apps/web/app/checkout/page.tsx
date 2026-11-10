@@ -9,7 +9,7 @@ import { createOrder } from '@/lib/api';
 import { guardarUltimoPedido } from '@/lib/ultimo-pedido';
 import { BotonInstalar } from '@/components/fredys/App';
 import { medirItems } from '@/lib/medir';
-import { formatPrice, DELIVERY_COSTS, ZONAS, PAGOS } from '@/lib/utils';
+import { formatPrice, DELIVERY_COSTS, ZONAS, PAGOS, DEMORA, isOpen, horariosParaMasTarde, horarioProgramado, type Horario } from '@/lib/utils';
 import { telefonoValido } from '@/lib/mensajes-wa';
 import { Navbar } from '@/components/Navbar';
 import { IconoFlecha } from '@/components/fredys/Piezas';
@@ -30,6 +30,17 @@ export default function CheckoutPage() {
   const [error,   setError]   = useState('');
   const [orderCode, setOrderCode] = useState('');
   const [telefonoEnviado, setTelefonoEnviado] = useState('');
+  // ¿Para cuándo? Lo antes posible, o a un horario (desde la demora mínima hasta el cierre)
+  const [cuando, setCuando] = useState<'ya' | 'tarde'>('ya');
+  const [horario, setHorario] = useState('');
+  const [abierto, setAbierto] = useState(true);
+  const [opciones, setOpciones] = useState<{ dia: string; horarios: Horario[] }>({ dia: 'hoy', horarios: [] });
+  const [programadoEnviado, setProgramadoEnviado] = useState('');
+  useEffect(() => {
+    const ab = isOpen(); setAbierto(ab);
+    if (!ab) setCuando('tarde'); // cerrado: solo se puede dejar programado
+    setOpciones(horariosParaMasTarde());
+  }, []);
 
   // Espera a que el carrito se lea del navegador antes de decidir que está vacío
   // (si no, al recargar el checkout siempre mandaba al inicio)
@@ -67,6 +78,11 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (cuando === 'tarde' && !horario) {
+      setError(isDelivery ? '¿A qué hora querés que te llegue?' : '¿A qué hora lo pasás a buscar?');
+      return;
+    }
+
     setLoading(true);
     try {
       const order = await createOrder({
@@ -78,6 +94,7 @@ export default function CheckoutPage() {
         zone:           zona,
         deliveryCost,
         notes:          notas || undefined,
+        scheduledFor:   cuando === 'tarde' ? horario : undefined,
         items: items.map((i) => ({
           productId:   i.productId,
           productName: i.name,
@@ -90,6 +107,7 @@ export default function CheckoutPage() {
       // El pedido llega al panel del local; desde ahí le escriben al cliente por WhatsApp
       setOrderCode(order.code);
       setTelefonoEnviado(telefono);
+      setProgramadoEnviado(cuando === 'tarde' ? horarioProgramado(horario) : '');
       guardarUltimoPedido(items); // para "¿Lo mismo que la otra vez?" en el menú
       // Venta: el pedido se registró y se abrió WhatsApp con el detalle (sin datos personales)
       medirItems('purchase', items, {
@@ -116,6 +134,11 @@ export default function CheckoutPage() {
           <p className="mt-2 text-apagado">
             Ya nos llegó tu pedido. En unos minutos te escribimos al <b className="text-crema">{telefonoEnviado}</b> por WhatsApp para confirmarlo.
           </p>
+          {programadoEnviado && (
+            <p className="mt-3 rounded-[var(--r-md)] border border-[var(--line)] p-3 text-sm">
+              ⏰ Lo tenemos listo <b className="text-cheddar">{programadoEnviado}</b>
+            </p>
+          )}
           <button className="btn-fredys mt-8 w-full" onClick={() => router.push('/')}>Volver al menú</button>
           {/* El mejor momento para ofrecer la app: acaba de pedir */}
           <BotonInstalar className="mt-4" />
@@ -166,6 +189,34 @@ export default function CheckoutPage() {
                   placeholder="Calle, número y entre calles" className="campo" />
               </Field>
             )}
+
+            <fieldset className="space-y-2">
+              <legend className="mb-2 text-sm font-semibold">¿Para cuándo?</legend>
+              {abierto ? (
+                <label className="ficha">
+                  <input type="radio" name="cuando" checked={cuando === 'ya'} onChange={() => setCuando('ya')} className="sr-only" />
+                  <span className="font-semibold">Lo antes posible</span>
+                  <span className="text-sm text-apagado">{DEMORA}</span>
+                </label>
+              ) : (
+                <p className="text-sm text-apagado">Ahora estamos cerrados: dejalo programado para {opciones.dia}.</p>
+              )}
+              {opciones.horarios.length > 0 && (
+                <label className="ficha">
+                  <input type="radio" name="cuando" checked={cuando === 'tarde'} onChange={() => setCuando('tarde')} className="sr-only" />
+                  <span className="font-semibold">{isDelivery ? 'Que llegue a una hora' : 'Lo busco a una hora'}</span>
+                  <span className="text-sm text-apagado">{opciones.dia}</span>
+                </label>
+              )}
+              {cuando === 'tarde' && (
+                <select value={horario} onChange={(e) => setHorario(e.target.value)} className="campo" aria-label="Horario">
+                  <option value="">{isDelivery ? 'Elegí a qué hora te llega…' : 'Elegí a qué hora lo buscás…'}</option>
+                  {opciones.horarios.map((h) => (
+                    <option key={h.valor} value={h.valor}>{opciones.dia === 'hoy' ? '' : `${opciones.dia[0].toUpperCase()}${opciones.dia.slice(1)} · `}{h.hora} hs</option>
+                  ))}
+                </select>
+              )}
+            </fieldset>
 
             <fieldset>
               <legend className="mb-2 text-sm font-semibold">Medio de pago</legend>

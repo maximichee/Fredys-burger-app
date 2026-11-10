@@ -46,6 +46,47 @@ export function estadoLocal(ahora = new Date()): EstadoLocal {
   return { abierto: false, corto, detalle: 'Mirá el menú y armá tu pedido' };
 }
 
+/* ===== Pedido para más tarde =====
+   Horarios que el cliente puede elegir: desde la demora mínima (45 min) hasta el cierre, cada 15 min.
+   Si hoy ya no da (cerrado o a punto de cerrar), se ofrecen los del próximo día que abre. */
+const DEMORA_MIN = 45;
+const PASO = 15;
+const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+
+/** Fecha (AAAA-MM-DD) en Argentina, sumando días */
+function fechaArgentina(ahora: Date, masDias: number) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
+    .format(new Date(ahora.getTime() + masDias * 864e5));
+}
+
+export type Horario = { valor: string; hora: string }; // valor = fecha ISO con hora de Argentina
+export function horariosParaMasTarde(ahora = new Date()): { dia: string; horarios: Horario[] } {
+  const { dia, mins } = horaArgentina(ahora);
+  let d = dia, dias = 0, desde: number;
+  if (DIAS_ABIERTO.includes(dia) && Math.max(mins, ABRE) + DEMORA_MIN <= CIERRA) {
+    desde = Math.max(mins, ABRE) + DEMORA_MIN;
+  } else {
+    do { d = (d + 1) % 7; dias++; } while (!DIAS_ABIERTO.includes(d));
+    desde = ABRE + DEMORA_MIN;
+  }
+  desde = Math.ceil(desde / PASO) * PASO;
+  const fecha = fechaArgentina(ahora, dias);
+  const horarios: Horario[] = [];
+  for (let m = desde; m <= CIERRA; m += PASO) horarios.push({ valor: `${fecha}T${hhmm(m)}:00-03:00`, hora: hhmm(m) });
+  return { dia: dias === 0 ? 'hoy' : dias === 1 ? 'mañana' : `el ${NOMBRES_DIA[d]}`, horarios };
+}
+
+/** "a las 21:00", "mañana a las 21:00" o "el martes a las 21:00" */
+export function horarioProgramado(fecha: Date | string, ahora = new Date()) {
+  const f = new Date(fecha);
+  const hora = new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(f);
+  const hoy = fechaArgentina(ahora, 0), manana = fechaArgentina(ahora, 1);
+  const dia = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(f);
+  if (dia === hoy) return `a las ${hora}`;
+  if (dia === manana) return `mañana a las ${hora}`;
+  return `el ${NOMBRES_DIA[horaArgentina(f).dia]} a las ${hora}`;
+}
+
 export const isOpen = () => estadoLocal().abierto;
 export const nextOpeningMsg = () => estadoLocal().corto;
 

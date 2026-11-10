@@ -79,6 +79,7 @@ model Order {
   total          Int
   notes          String?
   paidAt         DateTime?   // cuándo el local marcó "recibí el pago"
+  scheduledFor   DateTime?   // si el cliente lo pidió para más tarde (retiro o entrega a esa hora)
   items          OrderItem[]
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt

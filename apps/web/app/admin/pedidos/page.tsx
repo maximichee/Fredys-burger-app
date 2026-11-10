@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { adminFetch } from '@/lib/api';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, horarioProgramado } from '@/lib/utils';
 import { useOrdersSocket } from '@/lib/use-orders-socket';
 import { useOrderSound } from '@/lib/use-order-sound';
 import type { Order, OrderStatus } from '@fredys/types';
@@ -219,6 +219,11 @@ export default function AdminPedidosPage() {
                     {order.status === 'PENDING' && <span className="mr-2 rounded bg-yellow-400 px-1.5 py-0.5 text-[10px] font-extrabold text-black">NUEVO</span>}
                     {order.customerName}
                   </p>
+                  {order.scheduledFor && (
+                    <p className="my-1 inline-block rounded-lg bg-cyan-400/15 px-2 py-0.5 text-xs font-extrabold text-cyan-300">
+                      ⏰ {order.deliveryMethod === 'PICKUP' ? 'Lo busca' : 'Entregar'} {horarioProgramado(order.scheduledFor)}
+                    </p>
+                  )}
                   <p className="text-white/40 text-xs">{order.deliveryMethod === 'PICKUP' ? 'Retira' : 'Delivery'} · {order.items?.reduce((s, i) => s + i.quantity, 0) ?? 0} productos</p>
                   <p className="text-white/40 text-xs mt-0.5">{order.code}</p>
                   <p className="text-white/30 text-xs">{new Date(order.createdAt).toLocaleString('es-AR')}</p>
@@ -280,6 +285,9 @@ export default function AdminPedidosPage() {
                 <p>📱 {selected.customerPhone}{' '}
                   <a href={linkWa(selected)} target="_blank" rel="noopener noreferrer" className="ml-1 text-green-400 underline">abrir chat</a>
                 </p>
+                {selected.scheduledFor && (
+                  <p className="font-bold text-cyan-300">⏰ {selected.deliveryMethod === 'PICKUP' ? 'Lo busca' : 'Entregar'} {horarioProgramado(selected.scheduledFor)}</p>
+                )}
                 {selected.address && <p>📍 {selected.address}</p>}
                 <p>💳 {selected.paymentMethod === 'CASH' ? 'Efectivo' : 'Transferencia'}
                   {selected.paidAt
