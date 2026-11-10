@@ -6,6 +6,7 @@ import { formatPrice } from '@/lib/utils';
 import { useOrdersSocket } from '@/lib/use-orders-socket';
 import { useOrderSound } from '@/lib/use-order-sound';
 import type { Order, OrderStatus } from '@fredys/types';
+import { mensajePara, linkWa, leerDatosLocal, guardarDatosLocal, type DatosLocal } from '@/lib/mensajes-wa';
 
 const ALL_STATUSES: OrderStatus[] = ['PENDING','CONFIRMED','PREPARING','READY','DELIVERING','DELIVERED','CANCELLED'];
 
@@ -28,11 +29,23 @@ const NEXT_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
   PENDING: 'CONFIRMED', CONFIRMED: 'PREPARING', PREPARING: 'READY',
   READY: 'DELIVERING', DELIVERING: 'DELIVERED',
 };
+// Los que retiran no pasan por "En camino"
+const siguiente = (o: Order) =>
+  o.deliveryMethod === 'PICKUP' && o.status === 'READY' ? 'DELIVERED' : NEXT_STATUS[o.status as OrderStatus];
+
+const TEXTO_BOTON: Partial<Record<OrderStatus, string>> = {
+  CONFIRMED: 'Confirmar pedido', PREPARING: 'Pasar a preparando', READY: 'Marcar listo',
+  DELIVERING: 'Salió el delivery', DELIVERED: 'Marcar entregado',
+};
 
 export default function AdminPedidosPage() {
   const [orders, setOrders]   = useState<Order[]>([]);
   const [filter, setFilter]   = useState<OrderStatus | 'ALL'>('ALL');
   const [selected, setSelected] = useState<Order | null>(null);
+  const [local, setLocal] = useState<DatosLocal>({ direccion: '', alias: '' });
+  const [verDatos, setVerDatos] = useState(false);
+  useEffect(() => { setLocal(leerDatosLocal()); }, []);
+  const cambiarLocal = (d: DatosLocal) => { setLocal(d); guardarDatosLocal(d); };
   const playSound = useOrderSound();
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') ?? '' : '';
 
@@ -54,27 +67,56 @@ export default function AdminPedidosPage() {
 
   const filtered = filter === 'ALL' ? orders : orders.filter((o) => o.status === filter);
 
-  const advanceStatus = async (order: Order) => {
-    const next = NEXT_STATUS[order.status as OrderStatus];
-    if (!next) return;
-    await adminFetch(`/orders/${order.id}/status`, token, { method: 'PATCH', body: JSON.stringify({ status: next }) });
-    load();
-    if (selected?.id === order.id) setSelected({ ...order, status: next });
+  /** Cambia el estado y, si corresponde, abre WhatsApp con el mensaje para el cliente ya escrito */
+  const pasarA = async (order: Order, estado: OrderStatus, avisar: boolean) => {
+    const texto = avisar ? mensajePara(estado, order, local) : null;
+    // Se abre antes de esperar al servidor: si no, el navegador lo bloquea como ventana emergente
+    if (texto) window.open(linkWa(order, texto), '_blank');
+    try {
+      await adminFetch(`/orders/${order.id}/status`, token, { method: 'PATCH', body: JSON.stringify({ status: estado }) });
+      setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: estado } : o)));
+      setSelected(estado === 'CANCELLED' ? null : { ...order, status: estado });
+    } catch (e) {
+      alert(`No se pudo cambiar el estado: ${(e as Error).message}`);
+    }
   };
 
-  const cancel = async (order: Order) => {
-    if (!confirm('¿Cancelar este pedido?')) return;
-    await adminFetch(`/orders/${order.id}/status`, token, { method: 'PATCH', body: JSON.stringify({ status: 'CANCELLED' }) });
-    load();
-    setSelected(null);
+  const cancel = (order: Order, avisar: boolean) => {
+    if (!confirm(avisar ? '¿Cancelar este pedido y avisarle al cliente?' : '¿Cancelar este pedido sin avisar?')) return;
+    pasarA(order, 'CANCELLED', avisar);
   };
 
   return (
     <div className="p-6 h-screen flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-extrabold">Pedidos</h1>
-        <button onClick={load} className="text-white/40 hover:text-white text-sm transition-colors">↻ Actualizar</button>
+        <div className="flex items-center gap-4">
+          <button onClick={() => setVerDatos((v) => !v)} className="text-white/40 hover:text-white text-sm transition-colors">
+            ⚙ Datos para los mensajes
+          </button>
+          <button onClick={load} className="text-white/40 hover:text-white text-sm transition-colors">↻ Actualizar</button>
+        </div>
       </div>
+
+      {(verDatos || (!local.direccion && !local.alias)) && (
+        <div className="grid gap-3 rounded-2xl border border-white/5 bg-dark-100 p-4 sm:grid-cols-2">
+          <p className="text-xs text-white/45 sm:col-span-2">
+            Estos datos van en los mensajes de WhatsApp que le mandás al cliente. Se guardan en este navegador.
+          </p>
+          <label className="space-y-1 text-xs font-bold text-white/50">
+            Dirección para retirar
+            <input value={local.direccion} onChange={(e) => cambiarLocal({ ...local, direccion: e.target.value })}
+              placeholder="Ej: San Martín 1234"
+              className="w-full rounded-xl border border-white/10 bg-dark-200 px-3 py-2 text-sm font-normal text-white focus:border-brand focus:outline-none" />
+          </label>
+          <label className="space-y-1 text-xs font-bold text-white/50">
+            Alias para transferencias
+            <input value={local.alias} onChange={(e) => cambiarLocal({ ...local, alias: e.target.value })}
+              placeholder="Ej: fredys.burger.mp"
+              className="w-full rounded-xl border border-white/10 bg-dark-200 px-3 py-2 text-sm font-normal text-white focus:border-brand focus:outline-none" />
+          </label>
+        </div>
+      )}
 
       {/* Filtros */}
       <div className="flex gap-2 overflow-x-auto no-scrollbar">
@@ -97,12 +139,16 @@ export default function AdminPedidosPage() {
           {filtered.map((order) => (
             <button key={order.id} onClick={() => setSelected(order)}
               className={`w-full text-left bg-dark-100 border rounded-2xl p-4 transition-all hover:border-white/15 ${
-                selected?.id === order.id ? 'border-brand/50' : 'border-white/5'
+                selected?.id === order.id ? 'border-brand/50' : order.status === 'PENDING' ? 'border-yellow-500/40' : 'border-white/5'
               }`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="font-bold text-sm">{order.customerName}</p>
+                  <p className="font-bold text-sm">
+                    {order.status === 'PENDING' && <span className="mr-2 rounded bg-yellow-400 px-1.5 py-0.5 text-[10px] font-extrabold text-black">NUEVO</span>}
+                    {order.customerName}
+                  </p>
+                  <p className="text-white/40 text-xs">{order.deliveryMethod === 'PICKUP' ? 'Retira' : 'Delivery'} · {order.items?.reduce((s, i) => s + i.quantity, 0) ?? 0} productos</p>
                   <p className="text-white/40 text-xs mt-0.5">{order.code}</p>
                   <p className="text-white/30 text-xs">{new Date(order.createdAt).toLocaleString('es-AR')}</p>
                 </div>
@@ -125,7 +171,7 @@ export default function AdminPedidosPage() {
           {selected && (
             <motion.div key={selected.id}
               initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
-              className="bg-dark-100 border border-white/5 rounded-2xl p-5 overflow-y-auto space-y-4"
+              className="fixed inset-0 z-50 bg-dark-100 p-5 pb-24 overflow-y-auto space-y-4 lg:static lg:z-auto lg:border lg:border-white/5 lg:rounded-2xl lg:pb-5"
             >
               <div className="flex justify-between items-start">
                 <div>
@@ -136,7 +182,9 @@ export default function AdminPedidosPage() {
               </div>
 
               <div className="space-y-1 text-sm text-white/60">
-                <p>📱 {selected.customerPhone}</p>
+                <p>📱 {selected.customerPhone}{' '}
+                  <a href={linkWa(selected)} target="_blank" rel="noopener noreferrer" className="ml-1 text-green-400 underline">abrir chat</a>
+                </p>
                 {selected.address && <p>📍 {selected.address}</p>}
                 <p>💳 {selected.paymentMethod === 'CASH' ? 'Efectivo' : 'Transferencia'}</p>
                 <p>🛵 {selected.deliveryMethod === 'PICKUP' ? 'Retiro en local' : 'Delivery'}</p>
@@ -165,20 +213,7 @@ export default function AdminPedidosPage() {
                 </div>
               )}
 
-              <div className="space-y-2 pt-2">
-                {NEXT_STATUS[selected.status as OrderStatus] && (
-                  <button onClick={() => advanceStatus(selected)}
-                    className="w-full bg-brand text-black font-bold py-3 rounded-xl hover:bg-brand-strong transition-colors">
-                    → {STATUS_LABELS[NEXT_STATUS[selected.status as OrderStatus]!]}
-                  </button>
-                )}
-                {!['DELIVERED','CANCELLED'].includes(selected.status) && (
-                  <button onClick={() => cancel(selected)}
-                    className="w-full bg-red-600/10 text-red-400 border border-red-600/20 font-semibold py-2.5 rounded-xl hover:bg-red-600/20 transition-colors text-sm">
-                    Cancelar pedido
-                  </button>
-                )}
-              </div>
+              <Acciones pedido={selected} local={local} pasarA={pasarA} cancelar={cancel} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -186,3 +221,53 @@ export default function AdminPedidosPage() {
     </div>
   );
 }
+
+/** Botones del pedido: el principal cambia el estado y abre WhatsApp con el mensaje para el cliente */
+function Acciones({
+  pedido, local, pasarA, cancelar,
+}: {
+  pedido: Order; local: DatosLocal;
+  pasarA: (o: Order, e: OrderStatus, avisar: boolean) => void;
+  cancelar: (o: Order, avisar: boolean) => void;
+}) {
+  const sig = siguiente(pedido);
+  const conMensaje = sig ? !!mensajePara(sig, pedido, local) : false;
+  const abierto = !['DELIVERED', 'CANCELLED'].includes(pedido.status);
+
+  return (
+    <div className="space-y-2 border-t border-white/5 pt-4">
+      {sig && (
+        conMensaje ? (
+          <>
+            <button onClick={() => pasarA(pedido, sig, true)}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-500 py-3 font-bold text-black transition-colors hover:bg-green-400">
+              💬 {TEXTO_BOTON[sig]} y avisar por WhatsApp
+            </button>
+            <button onClick={() => pasarA(pedido, sig, false)}
+              className="w-full py-1 text-xs text-white/35 hover:text-white">
+              {TEXTO_BOTON[sig]} sin mandar mensaje
+            </button>
+          </>
+        ) : (
+          <button onClick={() => pasarA(pedido, sig, false)}
+            className="w-full rounded-xl bg-brand py-3 font-bold text-black transition-colors hover:bg-brand-strong">
+            → {TEXTO_BOTON[sig]}
+          </button>
+        )
+      )}
+      {abierto && (
+        <div className="flex gap-2 pt-1">
+          <button onClick={() => cancelar(pedido, true)}
+            className="flex-1 rounded-xl border border-red-600/20 bg-red-600/10 py-2.5 text-sm font-semibold text-red-400 transition-colors hover:bg-red-600/20">
+            Cancelar y avisar
+          </button>
+          <button onClick={() => cancelar(pedido, false)}
+            className="rounded-xl border border-white/10 px-3 py-2.5 text-xs text-white/40 hover:text-white">
+            Cancelar sin avisar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+

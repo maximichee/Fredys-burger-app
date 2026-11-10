@@ -32,6 +32,10 @@ export async function crearPedido(d: PedidoEntrada) {
   const envio = entrega === 'DELIVERY' ? Math.max(0, Math.round(Number(d.deliveryCost) || 0)) : 0;
   if (envio > 50000) throw new ErrorPedido('Costo de envío inválido');
 
+  // El local le escribe al cliente por WhatsApp: hace falta el número completo
+  if (String(d.customerPhone ?? '').replace(/\D/g, '').replace(/^0+/, '').length < 10)
+    throw new ErrorPedido('Poné tu WhatsApp con código de área (ej: 342 503-9876)');
+
   // Precios de la base
   const ids = [...new Set(items.map((i) => String(i.productId)))];
   const prods = await db.product.findMany({ where: { id: { in: ids } }, include: { prices: true } });

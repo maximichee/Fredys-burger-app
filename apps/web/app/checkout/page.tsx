@@ -9,7 +9,8 @@ import { createOrder } from '@/lib/api';
 import { guardarUltimoPedido } from '@/lib/ultimo-pedido';
 import { BotonInstalar } from '@/components/fredys/App';
 import { medirItems } from '@/lib/medir';
-import { formatPrice, DELIVERY_COSTS, ZONAS, PAGOS, WA_NUMBER } from '@/lib/utils';
+import { formatPrice, DELIVERY_COSTS, ZONAS, PAGOS } from '@/lib/utils';
+import { telefonoValido } from '@/lib/mensajes-wa';
 import { Navbar } from '@/components/Navbar';
 import { IconoFlecha } from '@/components/fredys/Piezas';
 
@@ -28,6 +29,7 @@ export default function CheckoutPage() {
   const [done,    setDone]    = useState(false);
   const [error,   setError]   = useState('');
   const [orderCode, setOrderCode] = useState('');
+  const [telefonoEnviado, setTelefonoEnviado] = useState('');
 
   // Espera a que el carrito se lea del navegador antes de decidir que está vacío
   // (si no, al recargar el checkout siempre mandaba al inicio)
@@ -59,9 +61,13 @@ export default function CheckoutPage() {
     if (!nombre || !telefono) return;
     if (isDelivery && !address) return;
     if (items.length === 0) return;
+    setError('');
+    if (!telefonoValido(telefono)) {
+      setError('Poné tu WhatsApp con código de área (ej: 342 503-9876), así te confirmamos el pedido.');
+      return;
+    }
 
     setLoading(true);
-    setError('');
     try {
       const order = await createOrder({
         deliveryMethod: isDelivery ? 'DELIVERY' : 'PICKUP',
@@ -81,14 +87,9 @@ export default function CheckoutPage() {
         })),
       });
 
-      // También manda a WhatsApp (canal principal)
-      const productos = items.map((i) => `• ${i.name} (${i.priceLabel}) x${i.quantity} — ${formatPrice(i.price * i.quantity)}`).join('\n');
-      const msg = encodeURIComponent(
-        `🍔 *NUEVO PEDIDO - Fredys Burger*\nN° ${order.code}\n\n📦 *PRODUCTOS:*\n${productos}\n\n💰 Subtotal: ${formatPrice(subtotal())}\n💰 Envío: ${deliveryCost > 0 ? formatPrice(deliveryCost) : 'Retiro en local'}\n💵 *TOTAL: ${formatPrice(total)}*\n\n👤 ${nombre}\n📱 ${telefono}\n📍 ${isDelivery ? address : 'Retiro en local'}\n💳 ${pago}${notas ? `\n📝 ${notas}` : ''}`
-      );
-      window.open(`https://wa.me/${WA_NUMBER}?text=${msg}`, '_blank');
-
+      // El pedido llega al panel del local; desde ahí le escriben al cliente por WhatsApp
       setOrderCode(order.code);
+      setTelefonoEnviado(telefono);
       guardarUltimoPedido(items); // para "¿Lo mismo que la otra vez?" en el menú
       // Venta: el pedido se registró y se abrió WhatsApp con el detalle (sin datos personales)
       medirItems('purchase', items, {
@@ -112,7 +113,9 @@ export default function CheckoutPage() {
           className="vidrio w-full max-w-sm rounded-[var(--r-xl)] p-8 text-center">
           <p className="titulo sticker text-6xl">¡Listo!</p>
           <p className="mt-4 text-sm text-apagado">Pedido N° <b className="text-crema">{orderCode}</b></p>
-          <p className="mt-2 text-apagado">Te abrimos WhatsApp con el detalle. Mandalo y lo empezamos a preparar: tarda entre 30 y 45 minutos.</p>
+          <p className="mt-2 text-apagado">
+            Ya nos llegó tu pedido. En unos minutos te escribimos al <b className="text-crema">{telefonoEnviado}</b> por WhatsApp para confirmarlo.
+          </p>
           <button className="btn-fredys mt-8 w-full" onClick={() => router.push('/')}>Volver al menú</button>
           {/* El mejor momento para ofrecer la app: acaba de pedir */}
           <BotonInstalar className="mt-4" />
@@ -140,6 +143,7 @@ export default function CheckoutPage() {
             <Field label="WhatsApp" htmlFor="tel">
               <input id="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} required type="tel" autoComplete="tel"
                 placeholder="Ej: 342 503-9876" className="campo" />
+              <p className="text-xs text-apagado">Con código de área. Te escribimos ahí para confirmar el pedido.</p>
             </Field>
 
             <fieldset className="space-y-2">
@@ -183,7 +187,7 @@ export default function CheckoutPage() {
             {error && <p className="rounded-[var(--r-md)] border border-red-400/40 bg-red-500/10 p-4 text-sm" role="alert">{error}</p>}
 
             <button type="submit" className="btn-fredys w-full lg:hidden" disabled={loading}>
-              {loading ? 'Enviando...' : <>Enviar pedido por WhatsApp <IconoFlecha /></>}
+              {loading ? 'Enviando...' : <>Hacer pedido <IconoFlecha /></>}
             </button>
           </form>
 
@@ -210,7 +214,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
               <button type="submit" form="checkoutForm" className="btn-fredys hidden w-full lg:flex" disabled={loading}>
-                {loading ? 'Enviando...' : 'Enviar pedido por WhatsApp'}
+                {loading ? 'Enviando...' : 'Hacer pedido'}
               </button>
             </div>
           </aside>
