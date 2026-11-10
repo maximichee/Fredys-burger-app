@@ -144,7 +144,7 @@ export default function AdminProductosPage() {
             ))}
           </div>
 
-          <div className="hidden grid-cols-2 gap-x-4 gap-y-12 sm:grid lg:grid-cols-3 2xl:grid-cols-4">
+          <div className="hidden grid-cols-2 gap-x-4 gap-y-12 sm:grid lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {items.map((p) => (
               <article key={p.id}
                 className={`relative flex flex-col rounded-[26px] bg-[#232323] px-4 pb-4 pt-16 transition ${p.available ? '' : 'opacity-70'}`}>
