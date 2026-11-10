@@ -38,6 +38,22 @@ const TEXTO_BOTON: Partial<Record<OrderStatus, string>> = {
   DELIVERING: 'Salió el delivery', DELIVERED: 'Marcar entregado',
 };
 
+/** El próximo paso del pedido, con el texto del botón y si manda WhatsApp al cliente */
+function paso(o: Order, local: DatosLocal) {
+  const estado = siguiente(o);
+  if (!estado) return null;
+  const wa = !!mensajePara(estado, o, local);
+  const retira = o.deliveryMethod === 'PICKUP';
+  const texto: Partial<Record<OrderStatus, string>> = {
+    CONFIRMED: '📲 Confirmar y mandar WhatsApp',
+    PREPARING: '👨‍🍳 Empezar a preparar',
+    READY: retira ? '📲 Está listo: avisarle' : '✅ Está listo',
+    DELIVERING: '📲 Salió el delivery: avisarle',
+    DELIVERED: retira ? '✅ Ya lo retiró' : '✅ Entregado',
+  };
+  return { estado, wa, texto: texto[estado] ?? STATUS_LABELS[estado] };
+}
+
 export default function AdminPedidosPage() {
   const [orders, setOrders]   = useState<Order[]>([]);
   const [filter, setFilter]   = useState<OrderStatus | 'ALL'>('ALL');
@@ -87,16 +103,20 @@ export default function AdminPedidosPage() {
   };
 
   return (
-    <div className="p-6 h-screen flex flex-col gap-4">
+    <div className="p-4 sm:p-6 lg:h-screen flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-extrabold">Pedidos</h1>
         <div className="flex items-center gap-4">
           <button onClick={() => setVerDatos((v) => !v)} className="text-white/40 hover:text-white text-sm transition-colors">
-            ⚙ Datos para los mensajes
+            ⚙ Datos
           </button>
-          <button onClick={load} className="text-white/40 hover:text-white text-sm transition-colors">↻ Actualizar</button>
+          <button onClick={load} className="text-white/40 hover:text-white text-sm transition-colors" aria-label="Actualizar" title="Actualizar">↻</button>
         </div>
       </div>
+
+      <p className="rounded-2xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm text-green-200">
+        Cuando llega un pedido, tocá el <b>botón verde 📲</b>: se abre WhatsApp con el mensaje para el cliente ya escrito. Solo tocás <b>Enviar</b>.
+      </p>
 
       {(verDatos || (!local.direccion && !local.alias)) && (
         <div className="grid gap-3 rounded-2xl border border-white/5 bg-dark-100 p-4 sm:grid-cols-2">
@@ -133,12 +153,13 @@ export default function AdminPedidosPage() {
         ))}
       </div>
 
-      <div className="flex-1 overflow-hidden grid lg:grid-cols-[1fr_360px] gap-4 min-h-0">
+      <div className="flex-1 grid lg:grid-cols-[1fr_360px] gap-4 min-h-0 lg:overflow-hidden">
         {/* Lista */}
-        <div className="overflow-y-auto space-y-2 pr-1">
-          {filtered.map((order) => (
-            <button key={order.id} onClick={() => setSelected(order)}
-              className={`w-full text-left bg-dark-100 border rounded-2xl p-4 transition-all hover:border-white/15 ${
+        <div className="space-y-2 lg:overflow-y-auto lg:pr-1">
+          {filtered.map((order) => { const p = paso(order, local); return (
+            <div key={order.id} role="button" tabIndex={0} onClick={() => setSelected(order)}
+              onKeyDown={(e) => e.key === 'Enter' && setSelected(order)}
+              className={`w-full cursor-pointer text-left bg-dark-100 border rounded-2xl p-4 transition-all hover:border-white/15 ${
                 selected?.id === order.id ? 'border-brand/50' : order.status === 'PENDING' ? 'border-yellow-500/40' : 'border-white/5'
               }`}
             >
@@ -159,8 +180,21 @@ export default function AdminPedidosPage() {
                   <p className="text-brand font-bold text-sm mt-1">{formatPrice(order.total)}</p>
                 </div>
               </div>
-            </button>
-          ))}
+              {p && (
+                <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  <button onClick={() => pasarA(order, p.estado, p.wa)}
+                    className={`flex-1 rounded-xl py-2.5 text-sm font-bold text-black transition-colors ${
+                      p.wa ? 'bg-green-500 hover:bg-green-400' : 'bg-brand hover:bg-brand-strong'}`}>
+                    {p.texto}
+                  </button>
+                  <button onClick={() => setSelected(order)}
+                    className="rounded-xl border border-white/10 px-3 text-xs font-bold text-white/50 hover:text-white">
+                    Ver
+                  </button>
+                </div>
+              )}
+            </div>
+          ); })}
           {filtered.length === 0 && (
             <div className="text-center text-white/30 py-16 text-sm">No hay pedidos con este filtro</div>
           )}
@@ -230,30 +264,25 @@ function Acciones({
   pasarA: (o: Order, e: OrderStatus, avisar: boolean) => void;
   cancelar: (o: Order, avisar: boolean) => void;
 }) {
-  const sig = siguiente(pedido);
-  const conMensaje = sig ? !!mensajePara(sig, pedido, local) : false;
+  const p = paso(pedido, local);
   const abierto = !['DELIVERED', 'CANCELLED'].includes(pedido.status);
 
   return (
     <div className="space-y-2 border-t border-white/5 pt-4">
-      {sig && (
-        conMensaje ? (
-          <>
-            <button onClick={() => pasarA(pedido, sig, true)}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-500 py-3 font-bold text-black transition-colors hover:bg-green-400">
-              💬 {TEXTO_BOTON[sig]} y avisar por WhatsApp
-            </button>
-            <button onClick={() => pasarA(pedido, sig, false)}
-              className="w-full py-1 text-xs text-white/35 hover:text-white">
-              {TEXTO_BOTON[sig]} sin mandar mensaje
-            </button>
-          </>
-        ) : (
-          <button onClick={() => pasarA(pedido, sig, false)}
-            className="w-full rounded-xl bg-brand py-3 font-bold text-black transition-colors hover:bg-brand-strong">
-            → {TEXTO_BOTON[sig]}
+      {p && (
+        <>
+          <button onClick={() => pasarA(pedido, p.estado, p.wa)}
+            className={`w-full rounded-xl py-3 font-bold text-black transition-colors ${
+              p.wa ? 'bg-green-500 hover:bg-green-400' : 'bg-brand hover:bg-brand-strong'}`}>
+            {p.texto}
           </button>
-        )
+          {p.wa && (
+            <button onClick={() => pasarA(pedido, p.estado, false)}
+              className="w-full py-1 text-xs text-white/35 hover:text-white">
+              {TEXTO_BOTON[p.estado]} sin mandar mensaje
+            </button>
+          )}
+        </>
       )}
       {abierto && (
         <div className="flex gap-2 pt-1">
