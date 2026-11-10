@@ -27,6 +27,15 @@ export const getProduct = (slug: string) =>
 export const createOrder = (data: CreateOrderDto) =>
   apiFetch<Order>('/orders', { method: 'POST', body: JSON.stringify(data) });
 
+// ─── Código de descuento (el pedido lo vuelve a calcular en el servidor) ─────
+export const probarDescuento = (code: string, subtotal: number) =>
+  apiFetch<{ code: string; etiqueta: string; descuento: number }>('/discounts/probar', { method: 'POST', body: JSON.stringify({ code, subtotal }) });
+
+/** Mensaje claro de un error de la API ("Ese código ya venció"), o null */
+export const mensajeDeError = (e: unknown) => {
+  try { return JSON.parse(String((e as Error).message).replace(/^API error \d+: /, '')).message as string; } catch { return null; }
+};
+
 // ─── Admin ────────────────────────────────────────────────────────────────────
 export const adminLogin = (email: string, password: string) =>
   apiFetch<{ accessToken: string; admin: { id: string; email: string; name: string } }>(

@@ -237,6 +237,7 @@ export default function AdminPedidosPage() {
                             ? <span className="rounded-full bg-green-500/15 px-2.5 py-1 text-green-300">💰 Pagado</span>
                             : debePago && <span className="rounded-full bg-red-500/15 px-2.5 py-1 text-red-300">Falta el pago · {order.paymentMethod === 'CASH' ? 'efectivo' : 'transferencia'}</span>}
                           {order.notes && <span className="rounded-full bg-white/[0.07] px-2.5 py-1 text-white/60">📝 con aclaración</span>}
+                          {!!order.discount && <span className="rounded-full bg-brand/15 px-2.5 py-1 text-brand">🏷️ {order.discountCode}</span>}
                         </div>
                       </div>
                       <div className="shrink-0 text-right">
@@ -357,6 +358,9 @@ function Detalle({ pedido, local, pasarA, cancelar, marcarPago, cerrar }: {
 
       <div className="space-y-2 px-5 pb-5 text-sm">
         <div className="flex justify-between text-white/60"><span>Subtotal</span><span>{formatPrice(pedido.subtotal)}</span></div>
+        {!!pedido.discount && (
+          <div className="flex justify-between text-brand"><span>🏷️ Descuento {pedido.discountCode}</span><span>−{formatPrice(pedido.discount)}</span></div>
+        )}
         <div className="flex justify-between text-white/60"><span>Envío</span><span>{retira ? 'Retira' : formatPrice(pedido.deliveryCost)}</span></div>
         <div className="flex justify-between pt-1 text-xl font-extrabold"><span>TOTAL</span><span>{formatPrice(pedido.total)}</span></div>
 

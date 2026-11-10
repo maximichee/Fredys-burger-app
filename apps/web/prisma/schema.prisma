@@ -80,6 +80,8 @@ model Order {
   notes          String?
   paidAt         DateTime?   // cuándo el local marcó "recibí el pago"
   scheduledFor   DateTime?   // si el cliente lo pidió para más tarde (retiro o entrega a esa hora)
+  discountCode   String?     // código de descuento usado (se guarda el texto: sirve aunque después lo borren)
+  discount       Int         @default(0) // cuánto se descontó del subtotal
   items          OrderItem[]
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
@@ -112,4 +114,25 @@ enum OrderStatus {
   DELIVERING
   DELIVERED
   CANCELLED
+}
+
+/// Códigos de descuento que arma el local desde el panel
+model DiscountCode {
+  id        String       @id @default(cuid())
+  code      String       @unique // siempre en mayúsculas
+  type      DiscountType
+  value     Int          // porcentaje (1-100) o pesos
+  active    Boolean      @default(true)
+  minTotal  Int?         // compra mínima (subtotal) para usarlo
+  maxUses   Int?         // tope de usos en total
+  uses      Int          @default(0)
+  expiresAt DateTime?
+  createdAt DateTime     @default(now())
+
+  @@map("discount_codes")
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
 }

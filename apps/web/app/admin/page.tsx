@@ -342,6 +342,9 @@ function Ticket({ pedido, cuantos }: { pedido?: Order; cuantos: number }) {
         {pedido && (
           <>
             <div className="flex justify-between text-white/60"><span>Subtotal</span><span>{formatPrice(pedido.subtotal)}</span></div>
+            {!!pedido.discount && (
+              <div className="flex justify-between text-brand"><span>🏷️ Descuento {pedido.discountCode}</span><span>−{formatPrice(pedido.discount)}</span></div>
+            )}
             <div className="flex justify-between text-white/60"><span>Envío</span><span>{formatPrice(pedido.deliveryCost)}</span></div>
             <div className="flex justify-between pt-1 text-lg font-extrabold"><span>TOTAL</span><span>{formatPrice(pedido.total)}</span></div>
           </>

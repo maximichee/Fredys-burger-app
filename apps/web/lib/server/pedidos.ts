@@ -1,10 +1,13 @@
 import { OrderStatus } from '@prisma/client';
 import { db } from './db';
+import { ErrorPedido } from './errores';
+import { aplicarEnPedido } from './descuentos';
+
+export { ErrorPedido };
 
 /* Pedidos. Mejora respecto de la API anterior: los precios se toman de la base, no del navegador,
    así nadie puede mandar un pedido con precios inventados. */
 
-export class ErrorPedido extends Error {}
 
 const texto = (v: unknown, max: number, campo: string, opcional = false) => {
   if (v === undefined || v === null || v === '') {
@@ -20,6 +23,7 @@ type ItemEntrada = { productId?: string; priceLabel?: string; quantity?: number;
 type PedidoEntrada = {
   deliveryMethod?: string; paymentMethod?: string; customerName?: string; customerPhone?: string;
   address?: string; zone?: string; deliveryCost?: number; notes?: string; items?: ItemEntrada[]; scheduledFor?: string;
+  discountCode?: string;
 };
 
 export async function crearPedido(d: PedidoEntrada) {
@@ -60,7 +64,10 @@ export async function crearPedido(d: PedidoEntrada) {
   });
   const subtotal = lineas.reduce((s, l) => s + l.subtotal, 0);
 
-  return db.order.create({
+  // El código de descuento se valida y se cuenta en la misma transacción que el pedido
+  return db.$transaction(async (tx) => {
+   const { code, descuento } = await aplicarEnPedido(tx, d.discountCode, subtotal);
+   return tx.order.create({
     data: {
       code: `PED${Date.now()}`,
       status: OrderStatus.PENDING,
@@ -74,10 +81,13 @@ export async function crearPedido(d: PedidoEntrada) {
       deliveryCost: envio,
       scheduledFor: programado,
       subtotal,
-      total: subtotal + envio,
+      discountCode: code,
+      discount: descuento,
+      total: subtotal - descuento + envio,
       items: { create: lineas },
     },
     include: { items: true },
+   });
   });
 }
 

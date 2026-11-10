@@ -58,6 +58,7 @@ export function mensajePara(estado: OrderStatus, o: Order, local: DatosLocal): s
       items,
       '',
       `Subtotal: ${formatPrice(o.subtotal)}`,
+      ...(o.discount ? [`Descuento${o.discountCode ? ` (${o.discountCode})` : ''}: -${formatPrice(o.discount)}`] : []),
       retiro ? 'Retiro en el local: sin cargo' : `Envío: ${formatPrice(o.deliveryCost)}`,
       `*Total: ${formatPrice(o.total)}*`,
       '',

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 export const dynamic = 'force-dynamic';
 import { motion } from 'framer-motion';
 import { useCart } from '@/lib/cart-store';
-import { createOrder } from '@/lib/api';
+import { createOrder, probarDescuento, mensajeDeError } from '@/lib/api';
 import { guardarUltimoPedido } from '@/lib/ultimo-pedido';
 import { BotonInstalar } from '@/components/fredys/App';
 import { medirItems } from '@/lib/medir';
@@ -63,8 +63,22 @@ export default function CheckoutPage() {
     medirItems('begin_checkout', items);
   }, [hydrated, items]);
 
+  // Código de descuento: se prueba acá para mostrarlo, y el servidor lo vuelve a calcular al crear el pedido
+  const [cupon, setCupon] = useState('');
+  const [aplicado, setAplicado] = useState<{ code: string; etiqueta: string; descuento: number } | null>(null);
+  const [cuponError, setCuponError] = useState('');
+  const [probando, setProbando] = useState(false);
+  const aplicarCupon = async () => {
+    if (!cupon.trim()) return;
+    setProbando(true); setCuponError('');
+    try { setAplicado(await probarDescuento(cupon, subtotal())); }
+    catch (e) { setAplicado(null); setCuponError(mensajeDeError(e) ?? 'No pudimos revisar el código, probá de nuevo'); }
+    setProbando(false);
+  };
+  const descuento = aplicado?.descuento ?? 0;
+
   const deliveryCost = DELIVERY_COSTS[zona] ?? 0;
-  const total = subtotal() + deliveryCost;
+  const total = subtotal() - descuento + deliveryCost;
   const isDelivery = zona !== 'retiro';
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -95,6 +109,7 @@ export default function CheckoutPage() {
         deliveryCost,
         notes:          notas || undefined,
         scheduledFor:   cuando === 'tarde' ? horario : undefined,
+        discountCode:   aplicado?.code,
         items: items.map((i) => ({
           productId:   i.productId,
           productName: i.name,
@@ -118,7 +133,7 @@ export default function CheckoutPage() {
       setDone(true);
     } catch (err) {
       console.error(err);
-      setError('No pudimos enviar el pedido. Probá de nuevo o escribinos por WhatsApp.');
+      setError(mensajeDeError(err) ?? 'No pudimos enviar el pedido. Probá de nuevo o escribinos por WhatsApp.');
     } finally {
       setLoading(false);
     }
@@ -235,7 +250,36 @@ export default function CheckoutPage() {
                 placeholder="Sin cebolla, extra salsa, timbre que no anda..." className="campo resize-none" />
             </Field>
 
+            <div className="space-y-2">
+              <label htmlFor="cupon" className="text-sm font-semibold">¿Tenés un código de descuento?</label>
+              {aplicado ? (
+                <div className="flex items-center justify-between gap-3 rounded-[var(--r-md)] border border-cheddar/50 bg-cheddar/10 px-4 py-3 text-sm">
+                  <span>🏷️ <b>{aplicado.code}</b> · {aplicado.etiqueta} <span className="text-cheddar">(−{formatPrice(aplicado.descuento)})</span></span>
+                  <button type="button" onClick={() => { setAplicado(null); setCupon(''); }} className="text-xs text-apagado underline">quitar</button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input id="cupon" value={cupon} onChange={(e) => { setCupon(e.target.value.toUpperCase()); setCuponError(''); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); aplicarCupon(); } }}
+                    placeholder="Ej: FREDY10" autoComplete="off" autoCapitalize="characters" className="campo uppercase" />
+                  <button type="button" onClick={aplicarCupon} disabled={probando || !cupon.trim()} className="btn-borde shrink-0 !px-5">
+                    {probando ? '…' : 'Aplicar'}
+                  </button>
+                </div>
+              )}
+              {cuponError && <p className="text-sm text-red-300" role="alert">{cuponError}</p>}
+            </div>
+
             {error && <p className="rounded-[var(--r-md)] border border-red-400/40 bg-red-500/10 p-4 text-sm" role="alert">{error}</p>}
+
+            {/* En el celular el resumen queda abajo: el total va junto al botón */}
+            <p className="flex items-baseline justify-between text-lg font-extrabold lg:hidden">
+              <span>Total</span>
+              <span className="text-brand">
+                {descuento > 0 && <span className="mr-2 text-sm font-semibold text-apagado line-through">{formatPrice(total + descuento)}</span>}
+                {formatPrice(total)}
+              </span>
+            </p>
 
             <button type="submit" className="btn-fredys w-full lg:hidden" disabled={loading}>
               {loading ? 'Enviando...' : <>Hacer pedido <IconoFlecha /></>}
@@ -259,6 +303,9 @@ export default function CheckoutPage() {
               </ul>
               <div className="space-y-2 border-t border-[var(--line)] pt-4 text-sm">
                 <div className="flex justify-between text-apagado"><span>Subtotal</span><span>{formatPrice(subtotal())}</span></div>
+                {descuento > 0 && (
+                  <div className="flex justify-between text-cheddar"><span>Descuento ({aplicado?.code})</span><span>−{formatPrice(descuento)}</span></div>
+                )}
                 <div className="flex justify-between text-apagado"><span>Envío</span><span>{deliveryCost > 0 ? formatPrice(deliveryCost) : 'Gratis'}</span></div>
                 <div className="flex justify-between border-t border-[var(--line)] pt-2 text-lg font-extrabold">
                   <span>Total</span><span className="text-brand">{formatPrice(total)}</span>

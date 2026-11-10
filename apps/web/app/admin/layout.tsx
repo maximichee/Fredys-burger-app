@@ -10,11 +10,12 @@ import type { Order, Product } from '@fredys/types';
 
 /* Panel del local: pensado para la computadora (barra lateral fija). En el celular, barra de abajo. */
 
-type Clave = 'resumen' | 'pedidos' | 'productos' | 'categorias';
+type Clave = 'resumen' | 'pedidos' | 'descuentos' | 'productos' | 'categorias';
 const NAV: { grupo: string; items: { href: string; label: string; clave: Clave; ayuda: string }[] }[] = [
   { grupo: 'Local', items: [
     { href: '/admin',         label: 'Resumen', clave: 'resumen', ayuda: 'Cómo viene el día' },
     { href: '/admin/pedidos', label: 'Pedidos', clave: 'pedidos', ayuda: 'Atender y avisar' },
+    { href: '/admin/descuentos', label: 'Descuentos', clave: 'descuentos', ayuda: 'Códigos de promo' },
   ] },
   { grupo: 'Menú', items: [
     { href: '/admin/productos',  label: 'Productos',  clave: 'productos',  ayuda: 'Precios, fotos y agotados' },
@@ -30,6 +31,7 @@ function Icono({ de, className = 'h-5 w-5' }: { de: Clave | 'web' | 'salir'; cla
     <svg viewBox="0 0 24 24" className={className} aria-hidden {...p}>
       {de === 'resumen' && <><path d="M4 20h16" /><rect x="5" y="11" width="3" height="6" rx="1" /><rect x="10.5" y="6" width="3" height="11" rx="1" /><rect x="16" y="9" width="3" height="8" rx="1" /></>}
       {de === 'pedidos' && <><path d="M6 3h12l1 4H5l1-4z" /><path d="M5 7h14v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7z" /><path d="M9 11a3 3 0 0 0 6 0" /></>}
+      {de === 'descuentos' && <><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9-9-9z" /><circle cx="8" cy="8" r="1.6" /><path d="M10 16l6-6" /></>}
       {de === 'productos' && <><path d="M4 11a8 6 0 0 1 16 0z" /><path d="M3.5 14h17" /><path d="M5 17.5h14a1 1 0 0 1-1 2.5H6a1 1 0 0 1-1-2.5z" /></>}
       {de === 'categorias' && <><rect x="3" y="3" width="7" height="7" rx="2" /><rect x="14" y="3" width="7" height="7" rx="2" /><rect x="3" y="14" width="7" height="7" rx="2" /><rect x="14" y="14" width="7" height="7" rx="2" /></>}
       {de === 'web' && <><path d="M14 4h6v6" /><path d="M20 4l-9 9" /><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></>}
